@@ -1,5 +1,7 @@
 # XRS Django App Setup Guide
 
+Repository: [https://github.com/stirlingv/xrs.git](https://github.com/stirlingv/xrs.git)
+
 This guide will help you set up and run the XRS Django app locally, even if you have never used Django or Python virtual environments before.
 
 ## Prerequisites
@@ -16,11 +18,9 @@ Please read our [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to cont
 Open your terminal and run:
 
 ```sh
-git clone <REPO_URL>
+git clone https://github.com/stirlingv/xrs.git
 cd xrs
 ```
-
-Replace `<REPO_URL>` with the actual repository URL.
 
 ## Step 2: Create a Virtual Environment
 
