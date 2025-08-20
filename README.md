@@ -7,6 +7,10 @@ This guide will help you set up and run the XRS Django app locally, even if you 
 - Python 3.13.1 (recommended) installed on your system
 - Git installed on your system
 
+## Contributing
+
+Please read our [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to contribute to this project.
+
 ## Step 1: Clone the Repository
 
 Open your terminal and run:
