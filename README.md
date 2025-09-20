@@ -1,8 +1,8 @@
-# XRS Django App Setup Guide
+# xfed Django App Setup Guide
 
-Repository: [https://github.com/stirlingv/xrs.git](https://github.com/stirlingv/xrs.git)
+Repository: [https://github.com/stirlingv/xfed.git](https://github.com/stirlingv/xfed.git)
 
-This guide will help you set up and run the XRS Django app locally, even if you have never used Django or Python virtual environments before.
+This guide will help you set up and run the xfed Django app locally, even if you have never used Django or Python virtual environments before.
 
 ## Prerequisites
 
@@ -18,8 +18,8 @@ Please read our [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to cont
 Open your terminal and run:
 
 ```sh
-git clone https://github.com/stirlingv/xrs.git
-cd xrs
+git clone https://github.com/stirlingv/xfed.git
+cd xfed
 ```
 
 ## Step 2: Create a Virtual Environment
@@ -73,7 +73,7 @@ python manage.py runserver
 ## Step 8: View the App
 
 Open your browser and go to [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
-You should see the XRS homepage with the integrated HTML5 template.
+You should see the xfed homepage with the integrated HTML5 template.
 
 ## Troubleshooting
 

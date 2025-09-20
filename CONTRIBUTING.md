@@ -1,6 +1,6 @@
-# Contributing to XRS
+# Contributing to xfed
 
-Thank you for your interest in contributing to the XRS Django project! Please read these guidelines to help us maintain a welcoming and productive environment.
+Thank you for your interest in contributing to the xfed Django project! Please read these guidelines to help us maintain a welcoming and productive environment.
 
 ## Code of Conduct
 
@@ -46,4 +46,4 @@ Thank you for your interest in contributing to the XRS Django project! Please re
 
 - Update documentation for any changes that affect usage or setup.
 
-Thank you for helping make XRS better!
+Thank you for helping make xfed better!
