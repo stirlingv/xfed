@@ -1,12 +1,36 @@
 from django.db import models
 
 class Banner(models.Model):
-    heading = models.CharField(max_length=200)
-    subheading = models.CharField(max_length=200, blank=True)
-    paragraph = models.TextField(blank=True)
-    image = models.ImageField(upload_to='banner/', blank=True, null=True)
-    button_text = models.CharField(max_length=100, blank=True)
-    button_link = models.URLField(blank=True)
+    heading = models.CharField(
+        max_length=200,
+        default="XFED Tax Solutions"
+    )
+    subheading = models.CharField(
+        max_length=200,
+        default="Former Feds Making The System Work For You!"
+    )
+    description1 = models.TextField(
+        default="XFED Tax Solutions is committed to providing efficient and effective tax and tax related services to America's taxpayer population."
+    )
+    description2 = models.TextField(
+        default="Whether you are an individual or business or both, America's largest network of former IRS tax professionals can provide the services you need."
+    )
+    description3 = models.TextField(
+        default="For specific information about how we can help you, please fill out our <a href='#'>brief questionnaire</a> or call us at [Justin's Personal Cell Phone Number]."
+    )
+    button_text = models.CharField(
+        max_length=100,
+        default="Learn More"
+    )
+    button_link = models.URLField(
+        blank=True,
+        default="#"
+    )
+    image = models.ImageField(
+        upload_to='banner/',
+        blank=True,
+        null=True
+    )
 
     def __str__(self):
         return self.heading
@@ -18,9 +42,9 @@ class Feature(models.Model):
         ('fa-rocket', 'Rocket'),
         ('fa-signal', 'Signal'),
     ]
-    icon = models.CharField(max_length=50, choices=ICON_CHOICES)
-    title = models.CharField(max_length=100)
-    description = models.TextField()
+    icon = models.CharField(max_length=50, choices=ICON_CHOICES, default='fa-gem')
+    title = models.CharField(max_length=100, default="Enter text here")
+    description = models.TextField(default="Enter text here")
 
     def __str__(self):
         return self.title
