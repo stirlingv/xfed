@@ -8,16 +8,16 @@
 <section id="banner">
 	<div class="content">
 		<header>
-			<h1>{{ banner.heading }}</h1>
-			<p>{{ banner.subheading }}</p>
+			<h1>{{ banner.heading|default:"XFED Tax Solutions" }}</h1>
+			<p>{{ banner.subheading|default:"Former Feds Making The System Work For You!" }}</p>
 		</header>
-		<p>{{ banner.description1|safe }}</p>
-		<p>{{ banner.description2|safe }}</p>
-		<p>{{ banner.description3|safe }}</p>
+		<p>{{ banner.description1|default:"XFED Tax Solutions is committed to providing efficient and effective tax and tax related services to America's taxpayer population."|safe }}</p>
+		<p>{{ banner.description2|default:"Whether you are an individual or business or both, America's largest network of former IRS tax professionals can provide the services you need."|safe }}</p>
+		<p>{{ banner.description3|default:"For specific information about how we can help you, please fill out our <a href='#'>brief questionnaire</a> or call us at [Justin's Personal Cell Phone Number]."|safe }}</p>
 		<ul class="actions">
 			<li>
-				<a href="{{ banner.button_link }}" class="button big">
-					{{ banner.button_text }}
+				<a href="{{ banner.button_link|default:'#' }}" class="button big">
+					{{ banner.button_text|default:"Learn More" }}
 				</a>
 			</li>
 		</ul>

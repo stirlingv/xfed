@@ -7,6 +7,19 @@ def index(request):
     # Get banner content (only one should exist)
     banner = Banner.objects.first()
     
+    # Create default banner if none exists in database
+    if not banner:
+        # Create a default banner object (not saved to database)
+        banner = Banner(
+            heading="XFED Tax Solutions",
+            subheading="Former Feds Making The System Work For You!",
+            description1="XFED Tax Solutions is committed to providing efficient and effective tax and tax related services to America's taxpayer population.",
+            description2="Whether you are an individual or business or both, America's largest network of former IRS tax professionals can provide the services you need.",
+            description3="For specific information about how we can help you, please fill out our <a href='#'>brief questionnaire</a> or call us at [Justin's Personal Cell Phone Number].",
+            button_text="Learn More",
+            button_link="#"
+        )
+    
     # Get active features
     features = Feature.objects.all()
     
