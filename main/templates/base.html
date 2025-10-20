@@ -1,0 +1,222 @@
+<!DOCTYPE HTML>
+{% load static %}
+<!--
+	Editorial by HTML5 UP
+	html5up.net | @ajlkn
+	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+-->
+<html>
+	<head>
+		<title>{% block title %}XFED Tax Solutions{% endblock %}</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<link rel="stylesheet" href="{% static 'assets/css/main.css' %}">
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+		{% block extra_css %}{% endblock %}
+	</head>
+	<body class="is-preload">
+
+		<!-- Wrapper -->
+			<div id="wrapper">
+
+				<!-- Main -->
+					<div id="main">
+						<div class="inner">
+
+							<!-- Header -->
+								<header id="header">
+									<a href="{% url 'index' %}" class="logo">
+										{% block header_logo %}
+											<strong>XFED:</strong> Thousands of Years of Government Experience, Working For You!
+										{% endblock %}
+									</a>
+									<ul class="icons">
+										{% block social_icons %}
+											{% for social_link in social_links %}
+												<li><a href="{{ social_link.url }}" class="icon brands fa-{{ social_link.platform }}" target="_blank"><span class="label">{{ social_link.get_platform_display }}</span></a></li>
+											{% empty %}
+												<!-- Default social icons if none configured -->
+												<li><a href="#" class="icon brands fa-twitter"><span class="label">Twitter</span></a></li>
+												<li><a href="#" class="icon brands fa-facebook-f"><span class="label">Facebook</span></a></li>
+												<li><a href="#" class="icon brands fa-snapchat-ghost"><span class="label">Snapchat</span></a></li>
+												<li><a href="#" class="icon brands fa-instagram"><span class="label">Instagram</span></a></li>
+												<li><a href="#" class="icon brands fa-medium-m"><span class="label">Medium</span></a></li>
+											{% endfor %}
+										{% endblock %}
+									</ul>
+								</header>
+
+							<!-- Main Content -->
+								{% block content %}
+								<!-- Page-specific content goes here -->
+								{% endblock %}
+
+						</div>
+					</div>
+
+				<!-- Sidebar -->
+					<div id="sidebar">
+						<div class="inner">
+
+							<!-- Search -->
+								<section id="search" class="alt">
+									<form method="post" action="#">
+										{% csrf_token %}
+										<input type="text" name="query" id="query" placeholder="Search" />
+									</form>
+								</section>
+
+							<!-- Menu -->
+								<nav id="menu">
+									<header class="major">
+										<h2>Menu</h2>
+									</header>
+									<ul>
+										{% block navigation_menu %}
+											{% for nav_item in nav_items %}
+												<li>
+													{% if nav_item.navigationitem_set.exists %}
+														<span class="opener">{{ nav_item.title }}</span>
+														<ul>
+															{% for sub_item in nav_item.navigationitem_set.all %}
+																{% if sub_item.is_active %}
+																	<li><a href="{{ sub_item.url }}">{{ sub_item.title }}</a></li>
+																{% endif %}
+															{% endfor %}
+														</ul>
+													{% else %}
+														<a href="{{ nav_item.url }}">{{ nav_item.title }}</a>
+													{% endif %}
+												</li>
+											{% empty %}
+												<!-- Default navigation if none configured -->
+												<li><a href="{% url 'index' %}">Homepage</a></li>
+												<li><a href="{% url 'generic' %}">Generic</a></li>
+												<li><a href="{% url 'elements' %}">Elements</a></li>
+												<li>
+													<span class="opener">Services Menu (Admin Configurable)</span>
+													<ul>
+														<li><a href="#">Tax Preparation</a></li>
+														<li><a href="#">Financial Planning</a></li>
+														<li><a href="#">Business Consulting</a></li>
+														<li><a href="#">Veterans Services</a></li>
+													</ul>
+												</li>
+												<li><a href="#">About Us</a></li>
+												<li><a href="#">Contact</a></li>
+												<li>
+													<span class="opener">Resources (Admin Configurable)</span>
+													<ul>
+														<li><a href="#">Tax Documents</a></li>
+														<li><a href="#">Forms & Checklists</a></li>
+														<li><a href="#">Planning Tools</a></li>
+														<li><a href="#">Client Portal</a></li>
+													</ul>
+												</li>
+												<li><a href="#">News & Updates</a></li>
+												<li><a href="#">Client Testimonials</a></li>
+												<li><a href="#">Schedule Appointment</a></li>
+											{% endfor %}
+										{% endblock %}
+									</ul>
+								</nav>
+
+							<!-- Mini Posts Section -->
+								<section>
+									<header class="major">
+										{% block mini_posts_title %}
+											<h2>Recent Updates</h2>
+										{% endblock %}
+									</header>
+									<div class="mini-posts">
+										{% block mini_posts %}
+											{% for mini_post in mini_posts %}
+												<article>
+													{% if mini_post.image %}
+														<a href="#" class="image"><img src="{{ mini_post.image.url }}" alt="" /></a>
+													{% else %}
+														<a href="#" class="image"><img src="{% static 'images/pic0' %}{{ forloop.counter|add:6 }}.jpg" alt="" /></a>
+													{% endif %}
+													<p>{{ mini_post.description }}</p>
+												</article>
+											{% empty %}
+												<!-- Default mini posts if none configured -->
+												<article>
+													<a href="#" class="image"><img src="{% static 'images/pic07.jpg' %}" alt="" /></a>
+													<p>This content comes from the "Mini Posts" section in the admin. Create mini post entries to replace this placeholder with quick updates and announcements.</p>
+												</article>
+												<article>
+													<a href="#" class="image"><img src="{% static 'images/pic08.jpg' %}" alt="" /></a>
+													<p>Mini posts are perfect for tax season updates, deadline reminders, or highlighting new services. Manage these through the Mini Posts admin section.</p>
+												</article>
+												<article>
+													<a href="#" class="image"><img src="{% static 'images/pic09.jpg' %}" alt="" /></a>
+													<p>Each mini post can include an image, description, and link. Use the admin interface to easily add, edit, or remove these sidebar highlights.</p>
+												</article>
+											{% endfor %}
+										{% endblock %}
+									</div>
+									<ul class="actions">
+										<li><a href="#" class="button">{% block mini_posts_button %}More{% endblock %}</a></li>
+									</ul>
+								</section>
+
+							<!-- Contact Section -->
+								<section>
+									<header class="major">
+										{% block contact_title %}
+											<h2>Get in touch</h2>
+										{% endblock %}
+									</header>
+									{% block contact_description %}
+										<p>Ready to get started with professional tax services? Contact XFED Tax Solutions today. This content can be customized through the "Contact Info" section in the admin panel to personalize your contact message.</p>
+									{% endblock %}
+									<ul class="contact">
+										{% block contact_info %}
+											{% if contact_info %}
+												<li class="icon solid fa-envelope"><a href="mailto:{{ contact_info.email }}">{{ contact_info.email }}</a></li>
+												<li class="icon solid fa-phone">{{ contact_info.phone }}</li>
+												<li class="icon solid fa-home">{{ contact_info.address|linebreaks }}</li>
+											{% else %}
+												<!-- Default contact info if none configured -->
+												<li class="icon solid fa-envelope"><a href="#">contact@xfedtax.com</a></li>
+												<li class="icon solid fa-phone">(555) 123-XFED</li>
+												<li class="icon solid fa-home">123 Tax Professional Way<br />
+												Business District, ST 12345</li>
+											{% endif %}
+										{% endblock %}
+									</ul>
+								</section>
+
+							<!-- Sidebar Extra Content -->
+								{% block sidebar_extra %}
+								<!-- Additional sidebar content can be added here in child templates -->
+								{% endblock %}
+
+							<!-- Footer -->
+								<footer id="footer">
+									{% block footer %}
+										{% if footer %}
+											<p class="copyright">{{ footer.copyright }}{% if footer.demo_images_link %} Demo Images: <a href="{{ footer.demo_images_link }}">Unsplash</a>.{% endif %}{% if footer.design_link %} Design: <a href="{{ footer.design_link }}">HTML5 UP</a>.{% endif %}</p>
+										{% else %}
+											<!-- Default footer if none configured -->
+											<p class="copyright">&copy; 2025 XFED Tax Solutions. All rights reserved. Update this copyright notice through the "Footer" section in the admin panel. Demo Images: <a href="https://unsplash.com">Unsplash</a>. Design: <a href="https://html5up.net">HTML5 UP</a>.</p>
+										{% endif %}
+									{% endblock %}
+								</footer>
+
+						</div>
+					</div>
+
+			</div>
+
+		<!-- Scripts -->
+			<script src="{% static 'assets/js/jquery.min.js' %}"></script>
+			<script src="{% static 'assets/js/browser.min.js' %}"></script>
+			<script src="{% static 'assets/js/breakpoints.min.js' %}"></script>
+			<script src="{% static 'assets/js/util.js' %}"></script>
+			<script src="{% static 'assets/js/main.js' %}"></script>
+			{% block extra_js %}{% endblock %}
+
+	</body>
+</html>

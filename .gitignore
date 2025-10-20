@@ -25,3 +25,6 @@ db.sqlite3
 # Static and media files (if generated)
 staticfiles/
 media/
+
+# Environment variables file
+.env
