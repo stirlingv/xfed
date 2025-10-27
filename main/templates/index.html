@@ -69,54 +69,72 @@
 		<h2>Ipsum sed dolor</h2>
 	</header>
 	<div class="posts">
-		<article>
-			<a href="#" class="image"><img src="{% static 'images/pic01.jpg' %}" alt="" /></a>
-			<h3>Post Title 1</h3>
-			<p>This content comes from the "Posts" section in the admin. Add new posts or edit existing ones to replace this placeholder text with your actual content.</p>
-			<ul class="actions">
-				<li><a href="#" class="button">More</a></li>
-			</ul>
-		</article>
-		<article>
-			<a href="#" class="image"><img src="{% static 'images/pic02.jpg' %}" alt="" /></a>
-			<h3>Post Title 2</h3>
-			<p>This content comes from the "Posts" section in the admin. Add new posts or edit existing ones to replace this placeholder text with your actual content.</p>
-			<ul class="actions">
-				<li><a href="#" class="button">More</a></li>
-			</ul>
-		</article>
-		<article>
-			<a href="#" class="image"><img src="{% static 'images/pic03.jpg' %}" alt="" /></a>
-			<h3>Post Title 3</h3>
-			<p>This content comes from the "Posts" section in the admin. Add new posts or edit existing ones to replace this placeholder text with your actual content.</p>
-			<ul class="actions">
-				<li><a href="#" class="button">More</a></li>
-			</ul>
-		</article>
-		<article>
-			<a href="#" class="image"><img src="{% static 'images/pic04.jpg' %}" alt="" /></a>
-			<h3>Post Title 4</h3>
-			<p>This content comes from the "Posts" section in the admin. Add new posts or edit existing ones to replace this placeholder text with your actual content.</p>
-			<ul class="actions">
-				<li><a href="#" class="button">More</a></li>
-			</ul>
-		</article>
-		<article>
-			<a href="#" class="image"><img src="{% static 'images/pic05.jpg' %}" alt="" /></a>
-			<h3>Post Title 5</h3>
-			<p>This content comes from the "Posts" section in the admin. Add new posts or edit existing ones to replace this placeholder text with your actual content.</p>
-			<ul class="actions">
-				<li><a href="#" class="button">More</a></li>
-			</ul>
-		</article>
-		<article>
-			<a href="#" class="image"><img src="{% static 'images/pic06.jpg' %}" alt="" /></a>
-			<h3>Post Title 6</h3>
-			<p>This content comes from the "Posts" section in the admin. Add new posts or edit existing ones to replace this placeholder text with your actual content.</p>
-			<ul class="actions">
-				<li><a href="#" class="button">More</a></li>
-			</ul>
-		</article>
+		{% if posts %}
+			{% for post in posts %}
+			<article>
+				{% if post.image %}
+					<a href="{{ post.button_link|default:'#' }}" class="image"><img src="{{ post.image.url }}" alt="{{ post.title }}" /></a>
+				{% else %}
+					<a href="{{ post.button_link|default:'#' }}" class="image"><img src="{% static 'images/pic0' %}{{ forloop.counter }}.jpg" alt="{{ post.title }}" /></a>
+				{% endif %}
+				<h3>{{ post.title }}</h3>
+				<p>{{ post.description }}</p>
+				<ul class="actions">
+					<li><a href="{{ post.button_link|default:'#' }}" class="button">{{ post.button_text|default:"More" }}</a></li>
+				</ul>
+			</article>
+			{% endfor %}
+		{% else %}
+			<!-- Default posts when none exist in database -->
+			<article>
+				<a href="#" class="image"><img src="{% static 'images/pic01.jpg' %}" alt="" /></a>
+				<h3>Post Title 1</h3>
+				<p>This content comes from the "Posts" section in the admin. Add new posts or edit existing ones to replace this placeholder text with your actual content.</p>
+				<ul class="actions">
+					<li><a href="#" class="button">More</a></li>
+				</ul>
+			</article>
+			<article>
+				<a href="#" class="image"><img src="{% static 'images/pic02.jpg' %}" alt="" /></a>
+				<h3>Post Title 2</h3>
+				<p>This content comes from the "Posts" section in the admin. Add new posts or edit existing ones to replace this placeholder text with your actual content.</p>
+				<ul class="actions">
+					<li><a href="#" class="button">More</a></li>
+				</ul>
+			</article>
+			<article>
+				<a href="#" class="image"><img src="{% static 'images/pic03.jpg' %}" alt="" /></a>
+				<h3>Post Title 3</h3>
+				<p>This content comes from the "Posts" section in the admin. Add new posts or edit existing ones to replace this placeholder text with your actual content.</p>
+				<ul class="actions">
+					<li><a href="#" class="button">More</a></li>
+				</ul>
+			</article>
+			<article>
+				<a href="#" class="image"><img src="{% static 'images/pic04.jpg' %}" alt="" /></a>
+				<h3>Post Title 4</h3>
+				<p>This content comes from the "Posts" section in the admin. Add new posts or edit existing ones to replace this placeholder text with your actual content.</p>
+				<ul class="actions">
+					<li><a href="#" class="button">More</a></li>
+				</ul>
+			</article>
+			<article>
+				<a href="#" class="image"><img src="{% static 'images/pic05.jpg' %}" alt="" /></a>
+				<h3>Post Title 5</h3>
+				<p>This content comes from the "Posts" section in the admin. Add new posts or edit existing ones to replace this placeholder text with your actual content.</p>
+				<ul class="actions">
+					<li><a href="#" class="button">More</a></li>
+				</ul>
+			</article>
+			<article>
+				<a href="#" class="image"><img src="{% static 'images/pic06.jpg' %}" alt="" /></a>
+				<h3>Post Title 6</h3>
+				<p>This content comes from the "Posts" section in the admin. Add new posts or edit existing ones to replace this placeholder text with your actual content.</p>
+				<ul class="actions">
+					<li><a href="#" class="button">More</a></li>
+				</ul>
+			</article>
+		{% endif %}
 	</div>
 </section>
 {% endblock %}
