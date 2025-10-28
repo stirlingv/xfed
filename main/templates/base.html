@@ -117,6 +117,11 @@
 												<li><a href="#">Client Testimonials</a></li>
 												<li><a href="#">Schedule Appointment</a></li>
 											{% endfor %}
+											
+											<!-- Dynamic Pages in Navigation -->
+											{% for page in dynamic_nav_pages %}
+												<li><a href="{{ page.get_absolute_url }}">{{ page.title }}</a></li>
+											{% endfor %}
 										{% endblock %}
 									</ul>
 								</nav>

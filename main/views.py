@@ -1,6 +1,6 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.templatetags.static import static
-from .models import Banner, Feature, Post, PageContent
+from .models import Banner, Feature, Post, PageContent, DynamicPage
 
 def index(request):
     """Homepage view with banner and features"""
@@ -71,3 +71,43 @@ def elements(request):
         'page_sections': page_sections,
     }
     return render(request, 'elements.html', context)
+
+def dynamic_page_view(request, slug):
+    """View for handling dynamically created pages"""
+    page = get_object_or_404(DynamicPage, slug=slug, is_published=True)
+    
+    # Get page content sections
+    page_sections = PageContent.objects.filter(
+        page=page.slug, 
+        is_active=True
+    ).order_by('section_type', 'order')
+    
+    # Determine which template to use based on page template_type
+    template_map = {
+        'generic': 'generic.html',
+        'elements': 'elements.html', 
+        'index': 'index.html',
+    }
+    
+    template_name = template_map.get(page.template_type, 'dynamic_page.html')
+    
+    context = {
+        'page': page,
+        'page_sections': page_sections,
+        'meta_description': page.meta_description,
+    }
+    
+    # For index template type, we need to include special context
+    if page.template_type == 'index':
+        # Get banner content (only one should exist)
+        banner = Banner.objects.first()
+        features = Feature.objects.all()
+        posts = Post.objects.all()[:6]
+        
+        context.update({
+            'banner': banner,
+            'features': features,
+            'posts': posts,
+        })
+    
+    return render(request, template_name, context)

@@ -1,6 +1,7 @@
 from django.contrib import admin
+from django.utils.html import format_html
 from .models import (Banner, Feature, Post, MiniPost, ContactInfo, Footer, 
-                    GenericPageSection, PageContent, NavigationItem, SocialMediaLink)
+                    GenericPageSection, PageContent, NavigationItem, SocialMediaLink, DynamicPage)
 
 # Configure admin site headers
 admin.site.site_header = "XFED Website Admin"
@@ -227,3 +228,90 @@ class SocialMediaLinkAdmin(admin.ModelAdmin):
             'description': 'Control the order and visibility of this social media link'
         }),
     )
+
+# Inline admin for PageContent to manage page sections
+class PageContentInline(admin.TabularInline):
+    model = PageContent
+    extra = 1
+    fields = ('section_type', 'title', 'content', 'order', 'is_active')
+    
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if hasattr(self, 'instance') and self.instance.pk:
+            return qs.filter(page=self.instance.slug)
+        return qs.none()
+
+@admin.register(DynamicPage)
+class DynamicPageAdmin(admin.ModelAdmin):
+    list_display = ('title', 'slug', 'template_type', 'is_published', 'show_in_navigation', 'updated_at')
+    list_filter = ('template_type', 'is_published', 'show_in_navigation', 'created_at')
+    list_editable = ('is_published', 'show_in_navigation')
+    search_fields = ('title', 'slug', 'meta_description')
+    prepopulated_fields = {'slug': ('title',)}
+    ordering = ('navigation_order', 'title')
+    
+    # Use fieldsets for better organization
+    fieldsets = (
+        ('Page Information', {
+            'fields': ('title', 'slug', 'template_type'),
+            'description': 'Basic page settings - the title appears in browser tabs and headers'
+        }),
+        ('SEO & Meta Data', {
+            'fields': ('meta_description',),
+            'description': 'Search engine optimization settings'
+        }),
+        ('Publication Settings', {
+            'fields': ('is_published', 'show_in_navigation', 'navigation_order'),
+            'description': 'Control page visibility and navigation placement'
+        }),
+    )
+    
+    inlines = []  # We'll add content management through a separate interface
+    
+    # Temporarily disable readonly fields to avoid form errors
+    # def get_readonly_fields(self, request, obj=None):
+    #     if obj:  # editing an existing object
+    #         return ['slug']
+    #     return []
+    
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        if not change:  # New page
+            # Create default content sections based on template type
+            if obj.template_type == 'generic':
+                PageContent.objects.create(
+                    page=obj.slug,
+                    section_type='header',
+                    title=f'Welcome to {obj.title}',
+                    content='Edit this header content in the Page Content section.',
+                    order=0
+                )
+                PageContent.objects.create(
+                    page=obj.slug,
+                    section_type='main_content',
+                    title='Main Content',
+                    content='<p>Add your main page content here. You can use HTML formatting.</p>',
+                    order=1
+                )
+            elif obj.template_type == 'elements':
+                PageContent.objects.create(
+                    page=obj.slug,
+                    section_type='header',
+                    title=f'{obj.title} - Elements & Features',
+                    content='This page showcases various design elements and interactive features.',
+                    order=0
+                )
+    
+    def response_add(self, request, obj, post_url_continue=None):
+        response = super().response_add(request, obj, post_url_continue)
+        if '_continue' not in request.POST:
+            # Redirect to PageContent admin filtered for this page
+            from django.shortcuts import redirect
+            return redirect(f'/admin/main/pagecontent/?page__exact={obj.slug}')
+        return response
+    
+    class Media:
+        css = {
+            'all': ('admin/css/dynamic_page_admin.css',)
+        }
+        js = ('admin/js/dynamic_page_admin.js',)

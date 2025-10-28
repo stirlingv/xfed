@@ -182,24 +182,20 @@ class Footer(models.Model):
 # Extensible Page Content Management
 class PageContent(models.Model):
     """Base model for managing different page sections"""
-    PAGE_CHOICES = [
-        ('homepage', 'Homepage'),
-        ('generic', 'Generic Page'),
-        ('elements', 'Elements Page'),
-    ]
-    
     SECTION_TYPE_CHOICES = [
         ('header', 'Page Header'),
         ('main_content', 'Main Content Section'),
         ('sidebar', 'Sidebar Content'),
         ('footer', 'Footer Content'),
+        ('banner', 'Banner Section'),
+        ('features', 'Features Section'),
+        ('posts', 'Posts Section'),
     ]
     
     page = models.CharField(
-        max_length=50, 
-        choices=PAGE_CHOICES,
+        max_length=100, 
         verbose_name="Page",
-        help_text="Which page this content appears on"
+        help_text="Which page this content appears on (use page slug for dynamic pages, or 'homepage'/'generic'/'elements' for default pages)"
     )
     section_type = models.CharField(
         max_length=50, 
@@ -240,7 +236,12 @@ class PageContent(models.Model):
         verbose_name_plural = "Page Sections"
     
     def __str__(self):
-        return f"{self.get_page_display()} - {self.title}"
+        return f"{self.get_page_name()} - {self.title}"
+    
+    def get_page_name(self):
+        """Get a friendly name for the page"""
+        # Return the page slug with title case
+        return self.page.replace('_', ' ').replace('-', ' ').title()
 
 # Keep existing GenericPageSection for backward compatibility
 class GenericPageSection(models.Model):
@@ -346,3 +347,72 @@ class SocialMediaLink(models.Model):
     
     def __str__(self):
         return f"{self.get_platform_display()}"
+
+# Dynamic Page Management System
+class DynamicPage(models.Model):
+    """Model for creating custom pages with different templates"""
+    TEMPLATE_CHOICES = [
+        ('generic', 'Generic Template (Simple content layout)'),
+        ('elements', 'Elements Template (Feature-rich with forms, tables, etc.)'),
+        ('index', 'Homepage Template (Banner + features + posts layout)'),
+    ]
+    
+    title = models.CharField(
+        max_length=200,
+        verbose_name="Page Title",
+        help_text="The title that appears in the browser tab and page header"
+    )
+    slug = models.SlugField(
+        max_length=200,
+        unique=True,
+        verbose_name="Page URL",
+        help_text="The URL path for this page (e.g., 'about-us' creates /about-us/). Only letters, numbers, and hyphens allowed."
+    )
+    template_type = models.CharField(
+        max_length=50,
+        choices=TEMPLATE_CHOICES,
+        default='generic',
+        verbose_name="Page Template",
+        help_text="Choose the layout style for this page"
+    )
+    meta_description = models.TextField(
+        max_length=160,
+        blank=True,
+        verbose_name="SEO Description",
+        help_text="Brief description for search engines (160 characters max)"
+    )
+    is_published = models.BooleanField(
+        default=True,
+        verbose_name="Publish Page",
+        help_text="Uncheck to hide this page from the website"
+    )
+    show_in_navigation = models.BooleanField(
+        default=False,
+        verbose_name="Show in Main Navigation",
+        help_text="Check to automatically add this page to the main navigation menu"
+    )
+    navigation_order = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Navigation Order",
+        help_text="Order in navigation menu (lower numbers appear first)"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['navigation_order', 'title']
+        verbose_name = "Custom Page"
+        verbose_name_plural = "Custom Pages"
+    
+    def __str__(self):
+        return f"{self.title} ({self.get_template_type_display()})"
+    
+    def get_absolute_url(self):
+        return f"/{self.slug}/"
+    
+    def get_page_content(self):
+        """Get all content sections for this page"""
+        return PageContent.objects.filter(
+            page=self.slug,
+            is_active=True
+        ).order_by('section_type', 'order')

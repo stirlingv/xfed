@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ page.title }}{% endblock %}
+
+{% block meta %}
+    {% if page.meta_description %}
+    <meta name="description" content="{{ page.meta_description }}">
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<!-- Main -->
+<div id="main">
+    <!-- Dynamic Page Content -->
+    <article class="post">
+        <header>
+            <div class="title">
+                <h2>{{ page.title }}</h2>
+            </div>
+        </header>
+        
+        {% if page_sections %}
+            {% for section in page_sections %}
+                <section>
+                    {% if section.section_type == 'header' %}
+                        <header>
+                            <h3>{{ section.title }}</h3>
+                        </header>
+                    {% elif section.section_type == 'main_content' %}
+                        <h3>{{ section.title }}</h3>
+                        <div class="content">
+                            {{ section.content|safe }}
+                        </div>
+                        {% if section.image %}
+                            <div class="image main">
+                                <img src="{{ section.image.url }}" alt="{{ section.title }}" />
+                            </div>
+                        {% endif %}
+                    {% elif section.section_type == 'sidebar' %}
+                        <aside>
+                            <h4>{{ section.title }}</h4>
+                            <div>{{ section.content|safe }}</div>
+                            {% if section.image %}
+                                <div class="image">
+                                    <img src="{{ section.image.url }}" alt="{{ section.title }}" />
+                                </div>
+                            {% endif %}
+                        </aside>
+                    {% endif %}
+                </section>
+            {% endfor %}
+        {% else %}
+            <div class="content">
+                <p>This page is ready for content! Visit the admin panel to add sections and content to this page.</p>
+                <p><strong>Page Template:</strong> {{ page.get_template_type_display }}</p>
+                <p><strong>Created:</strong> {{ page.created_at|date:"F j, Y" }}</p>
+            </div>
+        {% endif %}
+    </article>
+</div>
+{% endblock %}

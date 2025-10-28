@@ -1,4 +1,4 @@
-from .models import ContactInfo, Footer, SocialMediaLink, NavigationItem, MiniPost
+from .models import ContactInfo, Footer, SocialMediaLink, NavigationItem, MiniPost, DynamicPage
 
 def global_context(request):
     """
@@ -28,5 +28,11 @@ def global_context(request):
     
     # Get active mini posts for sidebar
     context['mini_posts'] = MiniPost.objects.all()[:3]  # Limit to 3 posts
+    
+    # Get published dynamic pages that should show in navigation
+    context['dynamic_nav_pages'] = DynamicPage.objects.filter(
+        is_published=True,
+        show_in_navigation=True
+    ).order_by('navigation_order', 'title')
     
     return context

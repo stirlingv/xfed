@@ -16,6 +16,8 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from django.conf import settings
+from django.conf.urls.static import static
 from main import views
 
 urlpatterns = [
@@ -23,4 +25,11 @@ urlpatterns = [
     path('', views.index, name='index'),
     path('generic/', views.generic, name='generic'),
     path('elements/', views.elements, name='elements'),
+    # Dynamic pages - this should be last to catch custom page URLs
+    path('<slug:slug>/', views.dynamic_page_view, name='dynamic_page'),
 ]
+
+# Serve static and media files during development
+if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATICFILES_DIRS[0])
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
