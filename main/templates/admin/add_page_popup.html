@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add New Page</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            font-family: "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f8f9fa;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: #417690;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .content {
+            padding: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #555;
+        }
+        input[type="text"], textarea, select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e1e5e9;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #417690;
+            box-shadow: 0 0 0 3px rgba(65, 118, 144, 0.1);
+        }
+        .help-text {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+        }
+        .template-info {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 10px;
+        }
+        .template-info h4 {
+            margin: 0 0 8px 0;
+            color: #417690;
+        }
+        .template-info p {
+            margin: 0;
+            font-size: 13px;
+            color: #666;
+        }
+        .buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e9ecef;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .btn-primary {
+            background: #417690;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #2d5a73;
+        }
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📄 Add New Page</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">Create a new page that will be available in navigation</p>
+        </div>
+
+        <div class="content">
+            <div id="message-area"></div>
+
+            <form id="add-page-form">
+                {% csrf_token %}
+
+                <div class="form-group">
+                    <label for="title">Page Title *</label>
+                    <input type="text" id="title" name="title" placeholder="e.g., Contact Us, About Our Services" required>
+                    <div class="help-text">This will appear in the browser tab and navigation menu</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="template_type">Page Template *</label>
+                    <select id="template_type" name="template_type" required>
+                        {% for value, name, description in template_choices %}
+                            <option value="{{ value }}" data-description="{{ description }}">{{ name }}</option>
+                        {% endfor %}
+                    </select>
+                    <div id="template-info" class="template-info">
+                        <h4>Generic Page</h4>
+                        <p>Simple content page - good for About, Contact, etc.</p>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="content">Initial Content</label>
+                    <textarea id="content" name="content" rows="4" placeholder="Enter the main content for this page..."></textarea>
+                    <div class="help-text">You can edit and add more content later through the Dynamic Pages admin</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="meta_description">SEO Description</label>
+                    <input type="text" id="meta_description" name="meta_description" placeholder="Brief description for search engines" maxlength="160">
+                    <div class="help-text">Optional: Appears in search engine results (160 characters max)</div>
+                </div>
+
+                <div class="buttons">
+                    <button type="button" class="btn btn-secondary" onclick="window.close()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Page</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Update template info when selection changes
+        document.getElementById('template_type').addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const description = selectedOption.getAttribute('data-description');
+            const name = selectedOption.text;
+
+            const infoDiv = document.getElementById('template-info');
+            infoDiv.innerHTML = `<h4>${name}</h4><p>${description}</p>`;
+        });
+
+        // Handle form submission
+        document.getElementById('add-page-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const messageArea = document.getElementById('message-area');
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+
+            // Show loading
+            messageArea.innerHTML = '<div class="loading">⏳ Creating page...</div>';
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Creating...';
+
+            // Get form data
+            const formData = new FormData(this);
+
+            // Submit via fetch
+            fetch('{% url "add_page_popup" %}', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    messageArea.innerHTML = `<div class="success">✅ ${data.message}</div>`;
+
+                    // Notify parent window and close
+                    if (window.opener && window.opener.handleNewPageCreated) {
+                        window.opener.handleNewPageCreated(data.page_url, data.page_title);
+                    }
+
+                    setTimeout(() => {
+                        window.close();
+                    }, 1000);
+                } else {
+                    messageArea.innerHTML = `<div class="error">❌ ${data.error}</div>`;
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Create Page';
+                }
+            })
+            .catch(error => {
+                messageArea.innerHTML = `<div class="error">❌ Error creating page: ${error}</div>`;
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Create Page';
+            });
+        });
+
+        // Auto-generate slug preview
+        document.getElementById('title').addEventListener('input', function() {
+            const title = this.value;
+            const slug = title.toLowerCase()
+                .replace(/[^a-z0-9\s-]/g, '')
+                .replace(/\s+/g, '-')
+                .replace(/-+/g, '-')
+                .replace(/^-|-$/g, '');
+
+            if (slug) {
+                this.parentNode.querySelector('.help-text').innerHTML =
+                    `This will appear in the browser tab and navigation menu<br>
+                     <small style="color: #417690;">📍 Page URL will be: <strong>/${slug}/</strong></small>`;
+            }
+        });
+    </script>
+</body>
+</html>

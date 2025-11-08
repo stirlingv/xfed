@@ -1,0 +1,41 @@
+/* Navigation Inline CSS */
+/* Styles for the navigation inline admin */
+
+.inline-group .tabular .form-row.has_original td {
+    padding: 8px;
+}
+
+.inline-group .tabular input[type="text"],
+.inline-group .tabular select {
+    width: 100%;
+    padding: 4px 6px;
+    font-size: 12px;
+}
+
+.inline-group .tabular .field-url input[readonly] {
+    background-color: #f8f9fa;
+    color: #6c757d;
+    border: 1px solid #e9ecef;
+}
+
+.inline-group h2 {
+    background: linear-gradient(to bottom, #e4e4e4, #bdbdbd);
+    color: #333;
+    font-size: 13px;
+    padding: 8px 10px;
+    margin: 0 0 10px 0;
+    border-radius: 4px 4px 0 0;
+}
+
+.inline-group .add-row a {
+    background: #417690;
+    padding: 6px 12px;
+    border-radius: 3px;
+    color: white;
+    text-decoration: none;
+    font-size: 12px;
+}
+
+.inline-group .add-row a:hover {
+    background: #205067;
+}

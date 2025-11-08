@@ -1,0 +1,124 @@
+{% extends "admin/change_form.html" %}
+{% load static %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+    .add-page-link {
+        display: inline-block;
+        margin-left: 10px;
+        padding: 4px 8px;
+        background: #417690;
+        color: white !important;
+        text-decoration: none;
+        border-radius: 3px;
+        font-size: 12px;
+        font-weight: normal;
+    }
+
+    .add-page-link:hover {
+        background: #2d5a73;
+        color: white !important;
+    }
+
+    .add-page-link:before {
+        content: "➕ ";
+    }
+
+    .field-url .form-row {
+        position: relative;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Function to handle new page creation from popup
+    window.handleNewPageCreated = function(pageUrl, pageTitle) {
+        console.log('New page created:', pageUrl, pageTitle);
+
+        // Find the URL dropdown
+        const urlDropdown = document.getElementById('id_url');
+        if (urlDropdown) {
+            // Add the new option to the dropdown
+            const newOption = new Option(pageTitle + ' (' + pageUrl + ')', pageUrl, false, true);
+            urlDropdown.add(newOption);
+
+            // Select the new option
+            urlDropdown.value = pageUrl;
+
+            // Trigger change event to update any dependent fields
+            urlDropdown.dispatchEvent(new Event('change'));
+
+            // Show success message
+            showAdminMessage('✅ Page "' + pageTitle + '" created and selected!', 'success');
+        }
+    };
+
+    // Function to show admin messages
+    function showAdminMessage(message, type) {
+        // Remove existing messages
+        const existingMessages = document.querySelectorAll('.admin-popup-message');
+        existingMessages.forEach(msg => msg.remove());
+
+        // Create new message
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'admin-popup-message';
+        messageDiv.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 4px;
+            font-weight: 500;
+            z-index: 9999;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            ${type === 'success' ?
+                'background: #d4edda; border: 1px solid #c3e6cb; color: #155724;' :
+                'background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24;'
+            }
+        `;
+        messageDiv.textContent = message;
+
+        document.body.appendChild(messageDiv);
+
+        // Auto remove after 4 seconds
+        setTimeout(() => {
+            messageDiv.remove();
+        }, 4000);
+    }
+
+    // Add click handler for "Add New Page" links
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('add-page-link')) {
+            e.preventDefault();
+
+            // Open popup window
+            const popup = window.open(
+                '/admin-helper/add-page/',
+                'addPagePopup',
+                'width=600,height=700,scrollbars=yes,resizable=yes,centerscreen=yes'
+            );
+
+            // Focus the popup
+            if (popup) {
+                popup.focus();
+            }
+        }
+    });
+
+    // Add visual enhancements to form
+    const urlField = document.querySelector('.field-url');
+    if (urlField) {
+        // Add some helpful text for the URL field
+        const helpText = urlField.querySelector('.help');
+        if (helpText) {
+            helpText.innerHTML += '<br><small style="color: #666;">💡 Can\'t find the page you need? Create a new one using the "Add New Page" link above.</small>';
+        }
+    }
+});
+</script>
+{% endblock %}
+
+{% block field_sets %}
+{{ block.super }}
+{% endblock %}

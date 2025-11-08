@@ -1,0 +1,237 @@
+[
+{
+  "model": "main.navigationitem",
+  "pk": 1,
+  "fields": {
+    "title": "Homepage",
+    "url": "/",
+    "parent": null,
+    "order": 10,
+    "is_active": true,
+    "icon_class": "fa-home",
+    "opens_new_window": false,
+    "created_at": "2025-11-08T16:30:00Z",
+    "updated_at": "2025-11-08T16:30:00Z"
+  }
+},
+{
+  "model": "main.navigationitem",
+  "pk": 2,
+  "fields": {
+    "title": "Services",
+    "url": "#",
+    "parent": null,
+    "order": 20,
+    "is_active": true,
+    "icon_class": "fa-briefcase",
+    "opens_new_window": false,
+    "created_at": "2025-11-08T16:30:00Z",
+    "updated_at": "2025-11-08T16:30:00Z"
+  }
+},
+{
+  "model": "main.navigationitem",
+  "pk": 3,
+  "fields": {
+    "title": "Tax Preparation",
+    "url": "/services/tax-preparation/",
+    "parent": 2,
+    "order": 10,
+    "is_active": true,
+    "icon_class": "",
+    "opens_new_window": false,
+    "created_at": "2025-11-08T16:30:00Z",
+    "updated_at": "2025-11-08T16:30:00Z"
+  }
+},
+{
+  "model": "main.navigationitem",
+  "pk": 4,
+  "fields": {
+    "title": "Financial Planning",
+    "url": "/services/financial-planning/",
+    "parent": 2,
+    "order": 20,
+    "is_active": true,
+    "icon_class": "",
+    "opens_new_window": false,
+    "created_at": "2025-11-08T16:30:00Z",
+    "updated_at": "2025-11-08T16:30:00Z"
+  }
+},
+{
+  "model": "main.navigationitem",
+  "pk": 5,
+  "fields": {
+    "title": "Business Consulting",
+    "url": "/services/business-consulting/",
+    "parent": 2,
+    "order": 30,
+    "is_active": true,
+    "icon_class": "",
+    "opens_new_window": false,
+    "created_at": "2025-11-08T16:30:00Z",
+    "updated_at": "2025-11-08T16:30:00Z"
+  }
+},
+{
+  "model": "main.navigationitem",
+  "pk": 6,
+  "fields": {
+    "title": "Veterans Services",
+    "url": "/services/veterans/",
+    "parent": 2,
+    "order": 40,
+    "is_active": true,
+    "icon_class": "",
+    "opens_new_window": false,
+    "created_at": "2025-11-08T16:30:00Z",
+    "updated_at": "2025-11-08T16:30:00Z"
+  }
+},
+{
+  "model": "main.navigationitem",
+  "pk": 7,
+  "fields": {
+    "title": "About Us",
+    "url": "/about/",
+    "parent": null,
+    "order": 30,
+    "is_active": true,
+    "icon_class": "fa-users",
+    "opens_new_window": false,
+    "created_at": "2025-11-08T16:30:00Z",
+    "updated_at": "2025-11-08T16:30:00Z"
+  }
+},
+{
+  "model": "main.navigationitem",
+  "pk": 8,
+  "fields": {
+    "title": "Resources",
+    "url": "#",
+    "parent": null,
+    "order": 40,
+    "is_active": true,
+    "icon_class": "fa-folder-open",
+    "opens_new_window": false,
+    "created_at": "2025-11-08T16:30:00Z",
+    "updated_at": "2025-11-08T16:30:00Z"
+  }
+},
+{
+  "model": "main.navigationitem",
+  "pk": 9,
+  "fields": {
+    "title": "Tax Documents",
+    "url": "/resources/documents/",
+    "parent": 8,
+    "order": 10,
+    "is_active": true,
+    "icon_class": "",
+    "opens_new_window": false,
+    "created_at": "2025-11-08T16:30:00Z",
+    "updated_at": "2025-11-08T16:30:00Z"
+  }
+},
+{
+  "model": "main.navigationitem",
+  "pk": 10,
+  "fields": {
+    "title": "Forms & Checklists",
+    "url": "/resources/forms/",
+    "parent": 8,
+    "order": 20,
+    "is_active": true,
+    "icon_class": "",
+    "opens_new_window": false,
+    "created_at": "2025-11-08T16:30:00Z",
+    "updated_at": "2025-11-08T16:30:00Z"
+  }
+},
+{
+  "model": "main.navigationitem",
+  "pk": 11,
+  "fields": {
+    "title": "Planning Tools",
+    "url": "/resources/tools/",
+    "parent": 8,
+    "order": 30,
+    "is_active": true,
+    "icon_class": "",
+    "opens_new_window": false,
+    "created_at": "2025-11-08T16:30:00Z",
+    "updated_at": "2025-11-08T16:30:00Z"
+  }
+},
+{
+  "model": "main.navigationitem",
+  "pk": 12,
+  "fields": {
+    "title": "Client Portal",
+    "url": "/portal/",
+    "parent": 8,
+    "order": 40,
+    "is_active": true,
+    "icon_class": "",
+    "opens_new_window": true,
+    "created_at": "2025-11-08T16:30:00Z",
+    "updated_at": "2025-11-08T16:30:00Z"
+  }
+},
+{
+  "model": "main.navigationitem",
+  "pk": 13,
+  "fields": {
+    "title": "Contact",
+    "url": "/contact/",
+    "parent": null,
+    "order": 50,
+    "is_active": true,
+    "icon_class": "fa-envelope",
+    "opens_new_window": false,
+    "created_at": "2025-11-08T16:30:00Z",
+    "updated_at": "2025-11-08T16:30:00Z"
+  }
+},
+{
+  "model": "main.socialmedialink",
+  "pk": 1,
+  "fields": {
+    "platform": "facebook-f",
+    "url": "https://facebook.com/xfedtax",
+    "is_active": true,
+    "order": 10
+  }
+},
+{
+  "model": "main.socialmedialink",
+  "pk": 2,
+  "fields": {
+    "platform": "twitter",
+    "url": "https://twitter.com/xfedtax",
+    "is_active": true,
+    "order": 20
+  }
+},
+{
+  "model": "main.socialmedialink",
+  "pk": 3,
+  "fields": {
+    "platform": "linkedin-in",
+    "url": "https://linkedin.com/company/xfed",
+    "is_active": true,
+    "order": 30
+  }
+},
+{
+  "model": "main.socialmedialink",
+  "pk": 4,
+  "fields": {
+    "platform": "envelope",
+    "url": "mailto:contact@xfedtax.com",
+    "is_active": true,
+    "order": 40
+  }
+}
+]

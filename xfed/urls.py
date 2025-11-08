@@ -25,6 +25,10 @@ urlpatterns = [
     path('', views.index, name='index'),
     path('generic/', views.generic, name='generic'),
     path('elements/', views.elements, name='elements'),
+    # Admin helper views
+    path('admin-helper/add-page/', views.add_page_popup, name='add_page_popup'),
+    # Intake forms
+    path('intake/<slug:slug>/', views.intake_form_view, name='intake_form'),
     # Dynamic pages - this should be last to catch custom page URLs
     path('<slug:slug>/', views.dynamic_page_view, name='dynamic_page'),
 ]

@@ -1,0 +1,30 @@
+# Pre-commit configuration for XFED project
+# Install with: pip install pre-commit && pre-commit install
+
+repos:
+  - repo: local
+    hooks:
+      - id: export-navigation-fixtures
+        name: Export Navigation Fixtures
+        entry: bash
+        args:
+          - -c
+          - |
+            if [ -f "manage.py" ] && python -c "from main.models import NavigationItem, SocialMediaLink; NavigationItem.objects.count()" 2>/dev/null; then
+              echo "🔄 Exporting navigation fixtures..."
+              python manage.py dumpdata main.NavigationItem main.SocialMediaLink --indent 2 --output fixtures/navigation.json 2>/dev/null || true
+              git add fixtures/navigation.json 2>/dev/null || true
+              echo "✅ Navigation fixtures updated"
+            fi
+        language: system
+        files: '^(main/models\.py|main/admin\.py|main/views\.py)$'
+        pass_filenames: false
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+        files: 'fixtures/.*\.json$'

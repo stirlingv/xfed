@@ -1,0 +1,133 @@
+/* Intake Submission Admin Styling */
+
+/* Status color coding */
+.field-status select option[value="new"] {
+    background-color: #fff2cc;
+    color: #856404;
+}
+
+.field-status select option[value="reviewed"] {
+    background-color: #cce5ff;
+    color: #004085;
+}
+
+.field-status select option[value="contacted"] {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.field-status select option[value="scheduled"] {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+.field-status select option[value="completed"] {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* Priority color coding */
+.field-priority select option[value="urgent"] {
+    background-color: #f8d7da;
+    color: #721c24;
+    font-weight: bold;
+}
+
+.field-priority select option[value="high"] {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.field-priority select option[value="normal"] {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.field-priority select option[value="low"] {
+    background-color: #f8f9fa;
+    color: #6c757d;
+}
+
+/* Follow-up indicators */
+.field-needs_followup_flag img[alt="True"] {
+    filter: hue-rotate(0deg);
+}
+
+.field-needs_followup_flag img[alt="False"] {
+    filter: grayscale(100%);
+}
+
+/* Client data formatting */
+.field-get_formatted_data div {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 5px;
+    border-left: 4px solid #007cba;
+    font-family: 'Segoe UI', Tango, sans-serif;
+}
+
+.field-get_formatted_data strong {
+    color: #2c3e50;
+    display: inline-block;
+    min-width: 100px;
+}
+
+.field-get_formatted_data a {
+    color: #007cba;
+    text-decoration: none;
+}
+
+.field-get_formatted_data a:hover {
+    text-decoration: underline;
+}
+
+/* Admin notes field */
+.field-admin_notes textarea {
+    font-family: 'Segoe UI', Tango, sans-serif;
+    border-radius: 4px;
+}
+
+/* Action buttons styling */
+.actions select {
+    margin-right: 10px;
+}
+
+/* List view enhancements */
+.change-list .field-get_client_name a {
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.change-list .field-status {
+    font-weight: bold;
+}
+
+/* Age indicators */
+.field-days_since_submission {
+    font-style: italic;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+    .field-get_formatted_data div {
+        padding: 10px;
+        font-size: 14px;
+    }
+
+    .field-get_formatted_data strong {
+        min-width: 80px;
+        font-size: 13px;
+    }
+}
+
+/* Urgent submissions highlighting */
+tr.row1 .field-priority:contains("urgent"),
+tr.row2 .field-priority:contains("urgent") {
+    background-color: #fff5f5 !important;
+}
+
+/* New submissions highlighting */
+tr.row1 .field-status:contains("new"),
+tr.row2 .field-status:contains("new") {
+    background-color: #fffbf0 !important;
+}

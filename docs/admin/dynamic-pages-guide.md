@@ -48,13 +48,13 @@ After saving your page, you'll be redirected to add content sections:
 - Layout: Simple header and content area
 - Best for: Text-heavy pages with minimal design elements
 
-### Elements Template  
+### Elements Template
 - Perfect for: Feature showcases, service pages, interactive content
 - Layout: Flexible sections with support for forms, tables, buttons
 - Best for: Pages that need rich design elements
 
 ### Homepage Template
-- Perfect for: Landing pages, service overviews  
+- Perfect for: Landing pages, service overviews
 - Layout: Banner section, features grid, posts/news section
 - Best for: Pages that need to showcase multiple elements
 
@@ -66,7 +66,7 @@ After saving your page, you'll be redirected to add content sections:
 3. Make your changes and click **Save**
 
 ### Managing Page Content
-1. Go to **Admin Panel > Page Sections**  
+1. Go to **Admin Panel > Page Sections**
 2. Filter by your page name to see all content sections
 3. Edit, reorder, or add new sections as needed
 
@@ -99,7 +99,7 @@ After saving your page, you'll be redirected to add content sections:
 You can use basic HTML tags in content areas:
 - `<p>` for paragraphs
 - `<strong>` for bold text
-- `<em>` for italic text  
+- `<em>` for italic text
 - `<a href="URL">` for links
 - `<ul><li>` for bullet lists
 - `<h3>`, `<h4>` for subheadings
@@ -125,6 +125,6 @@ You can use basic HTML tags in content areas:
 
 If you need assistance with creating or managing pages, contact your website administrator. They can help with:
 - Complex HTML formatting
-- Custom styling requirements  
+- Custom styling requirements
 - Advanced page layouts
 - Troubleshooting technical issues

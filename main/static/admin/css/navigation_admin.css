@@ -1,0 +1,129 @@
+/* Navigation Admin CSS */
+/* Enhances the NavigationItem admin interface */
+
+/* Make the navigation admin form more user-friendly */
+.model-navigationitem .form-row {
+    margin-bottom: 15px;
+}
+
+/* Style the URL choice field */
+.model-navigationitem select[name="url_choice"] {
+    width: 100%;
+    max-width: 400px;
+    padding: 6px 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+/* Style the custom URL field */
+.model-navigationitem input[name="custom_url"] {
+    width: 100%;
+    max-width: 400px;
+    padding: 6px 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+/* Disabled field styling */
+.model-navigationitem input[name="custom_url"]:disabled {
+    background-color: #f5f5f5;
+    color: #999;
+}
+
+/* Quick actions styling */
+.model-navigationitem .quick-actions {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    padding: 12px;
+    margin-top: 15px;
+}
+
+.model-navigationitem .quick-actions button {
+    background: #007cba;
+    border: none;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+    margin-right: 8px;
+    margin-top: 4px;
+}
+
+.model-navigationitem .quick-actions button:hover {
+    background: #005a87;
+}
+
+/* List view enhancements */
+.model-navigationitem .field-url_display {
+    font-family: monospace;
+    font-size: 12px;
+}
+
+.model-navigationitem .field-has_children_indicator {
+    text-align: center;
+}
+
+/* Help text styling */
+.model-navigationitem .help {
+    font-size: 11px;
+    color: #666;
+    margin-top: 4px;
+    font-style: italic;
+}
+
+/* Fieldset styling */
+.model-navigationitem fieldset.collapse {
+    border: 1px solid #e1e4e8;
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.model-navigationitem fieldset.collapse h2 {
+    background: #f6f8fa;
+    padding: 8px 12px;
+    margin: -15px -15px 15px -15px;
+    border-bottom: 1px solid #e1e4e8;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* Icon preview in admin */
+.model-navigationitem .icon-preview {
+    display: inline-block;
+    width: 20px;
+    text-align: center;
+    margin-right: 5px;
+    color: #666;
+}
+
+/* Parent relationship indicator */
+.model-navigationitem .parent-indicator {
+    font-size: 11px;
+    color: #666;
+    font-style: italic;
+}
+
+/* URL type indicators */
+.url-type-internal { color: #28a745; }
+.url-type-external { color: #fd7e14; }
+.url-type-email { color: #007bff; }
+.url-type-phone { color: #6f42c1; }
+.url-type-dropdown { color: #6c757d; }
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .model-navigationitem select[name="url_choice"],
+    .model-navigationitem input[name="custom_url"] {
+        max-width: 100%;
+    }
+
+    .model-navigationitem .quick-actions button {
+        display: block;
+        width: 100%;
+        margin-bottom: 5px;
+        margin-right: 0;
+    }
+}

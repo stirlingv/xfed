@@ -9,6 +9,26 @@ This guide will help you set up and run the xfed Django app locally, even if you
 - Python 3.13.1 (recommended) installed on your system
 - Git installed on your system
 
+## Documentation
+
+- **[Complete Documentation](docs/README.md)** - Comprehensive guide for all users
+- **[Admin Guides](docs/admin/)** - Content management and system administration
+- **[Technical Documentation](docs/technical/)** - Developer and implementation details
+- **[Contributing Guidelines](CONTRIBUTING.md)** - Development workflow and standards
+
+## Quick Links
+
+### For Admin Users
+
+- **[Dynamic Pages Guide](docs/admin/dynamic-pages-guide.md)** - Create and manage custom pages
+- **[Navigation Management](docs/admin/navigation-management-guide.md)** - Configure menus and social links
+- **[Intake System Guide](docs/admin/intake-system-guide.md)** - Set up intake forms
+- **[Submission Management](docs/admin/submission-management-guide.md)** - Track client submissions
+
+### For Developers
+
+- **[Implementation Summary](docs/technical/implementation-summary.md)** - Technical architecture overview
+
 ## Contributing
 
 Please read our [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to contribute to this project.

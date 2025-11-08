@@ -1,0 +1,231 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ form.title }} - XFED Tax Solutions{% endblock %}
+
+{% block meta %}
+    {% if form.description %}
+    <meta name="description" content="{{ form.description|truncatechars:160 }}">
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<section>
+    <header class="main">
+        <h1>{{ form.title }}</h1>
+    </header>
+
+    {% if form.description %}
+        <div class="content">
+            <p>{{ form.description|linebreaks }}</p>
+        </div>
+        <hr class="major" />
+    {% endif %}
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="box {% if message.tags == 'success' %}style="background: #dff0d8; border: 1px solid #d6e9c6; color: #3c763d;"{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="row gtr-200">
+        <div class="col-8 col-12-medium">
+            <!-- Main Form -->
+            <form method="post" enctype="multipart/form-data" action="">
+                {% csrf_token %}
+                <div class="row gtr-uniform">
+
+                    {% for field in form_fields %}
+                        {% if field.field_type == 'text' or field.field_type == 'email' or field.field_type == 'phone' %}
+                            <div class="col-6 col-12-xsmall">
+                                <label for="{{ field.field_name }}">
+                                    {{ field.label }}{% if field.is_required %} *{% endif %}
+                                </label>
+                                <input
+                                    type="{% if field.field_type == 'email' %}email{% elif field.field_type == 'phone' %}tel{% else %}text{% endif %}"
+                                    name="{{ field.field_name }}"
+                                    id="{{ field.field_name }}"
+                                    {% if field.placeholder %}placeholder="{{ field.placeholder }}"{% endif %}
+                                    {% if field.is_required %}required{% endif %}
+                                />
+                                {% if field.help_text %}
+                                    <p style="font-size: 0.8em; color: #666; margin-top: 0.25em;">{{ field.help_text }}</p>
+                                {% endif %}
+                            </div>
+
+                        {% elif field.field_type == 'textarea' %}
+                            <div class="col-12">
+                                <label for="{{ field.field_name }}">
+                                    {{ field.label }}{% if field.is_required %} *{% endif %}
+                                </label>
+                                <textarea
+                                    name="{{ field.field_name }}"
+                                    id="{{ field.field_name }}"
+                                    {% if field.placeholder %}placeholder="{{ field.placeholder }}"{% endif %}
+                                    {% if field.is_required %}required{% endif %}
+                                    rows="6"
+                                ></textarea>
+                                {% if field.help_text %}
+                                    <p style="font-size: 0.8em; color: #666; margin-top: 0.25em;">{{ field.help_text }}</p>
+                                {% endif %}
+                            </div>
+
+                        {% elif field.field_type == 'select' %}
+                            <div class="col-6 col-12-small">
+                                <label for="{{ field.field_name }}">
+                                    {{ field.label }}{% if field.is_required %} *{% endif %}
+                                </label>
+                                <select name="{{ field.field_name }}" id="{{ field.field_name }}" {% if field.is_required %}required{% endif %}>
+                                    <option value="">-- Select {{ field.label }} --</option>
+                                    {% for choice in field.get_choices_list %}
+                                        <option value="{{ choice }}">{{ choice }}</option>
+                                    {% endfor %}
+                                </select>
+                                {% if field.help_text %}
+                                    <p style="font-size: 0.8em; color: #666; margin-top: 0.25em;">{{ field.help_text }}</p>
+                                {% endif %}
+                            </div>
+
+                        {% elif field.field_type == 'radio' %}
+                            <div class="col-12">
+                                <fieldset>
+                                    <legend>{{ field.label }}{% if field.is_required %} *{% endif %}</legend>
+                                    {% for choice in field.get_choices_list %}
+                                        <div class="col-4 col-12-small" style="display: inline-block;">
+                                            <input type="radio" id="{{ field.field_name }}_{{ forloop.counter }}" name="{{ field.field_name }}" value="{{ choice }}" {% if field.is_required and forloop.first %}required{% endif %}>
+                                            <label for="{{ field.field_name }}_{{ forloop.counter }}">{{ choice }}</label>
+                                        </div>
+                                    {% endfor %}
+                                </fieldset>
+                                {% if field.help_text %}
+                                    <p style="font-size: 0.8em; color: #666; margin-top: 0.25em;">{{ field.help_text }}</p>
+                                {% endif %}
+                            </div>
+
+                        {% elif field.field_type == 'checkbox' %}
+                            <div class="col-12">
+                                <input type="checkbox" id="{{ field.field_name }}" name="{{ field.field_name }}" value="yes" {% if field.is_required %}required{% endif %}>
+                                <label for="{{ field.field_name }}">{{ field.label }}{% if field.is_required %} *{% endif %}</label>
+                                {% if field.help_text %}
+                                    <p style="font-size: 0.8em; color: #666; margin-top: 0.25em;">{{ field.help_text }}</p>
+                                {% endif %}
+                            </div>
+
+                        {% elif field.field_type == 'file' %}
+                            <div class="col-12">
+                                <label for="{{ field.field_name }}">
+                                    {{ field.label }}{% if field.is_required %} *{% endif %}
+                                </label>
+                                <input type="file" name="{{ field.field_name }}" id="{{ field.field_name }}" {% if field.is_required %}required{% endif %} multiple>
+                                {% if field.help_text %}
+                                    <p style="font-size: 0.8em; color: #666; margin-top: 0.25em;">{{ field.help_text }}</p>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+
+                    {% endfor %}
+
+                    <!-- Default file upload section if form allows uploads -->
+                    {% if form.allow_file_uploads and not has_file_fields %}
+                        <div class="col-12">
+                            <label for="documents">Upload Documents (Optional)</label>
+                            <input type="file" name="documents" id="documents" multiple>
+                            <p style="font-size: 0.8em; color: #666; margin-top: 0.25em;">
+                                You can upload multiple files. Accepted formats: PDF, DOC, DOCX, JPG, PNG (Max 10MB per file)
+                            </p>
+                        </div>
+                    {% endif %}
+
+                    <!-- Submit Button -->
+                    <div class="col-12">
+                        <ul class="actions">
+                            <li><input type="submit" value="Submit {{ form.title }}" class="primary" /></li>
+                            <li><input type="reset" value="Clear Form" /></li>
+                        </ul>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="col-4 col-12-medium">
+            <!-- Sidebar Information -->
+            <div class="box">
+                <h3>Need Help?</h3>
+                <p>If you have questions about this form or need assistance, please don't hesitate to contact us:</p>
+
+                {% if contact_info %}
+                    <ul style="list-style: none; padding-left: 0;">
+                        {% if contact_info.phone %}
+                            <li><strong>Phone:</strong> {{ contact_info.phone }}</li>
+                        {% endif %}
+                        {% if contact_info.email %}
+                            <li><strong>Email:</strong> <a href="mailto:{{ contact_info.email }}">{{ contact_info.email }}</a></li>
+                        {% endif %}
+                        {% if contact_info.address %}
+                            <li><strong>Address:</strong> {{ contact_info.address|linebreaks }}</li>
+                        {% endif %}
+                    </ul>
+                {% else %}
+                    <ul style="list-style: none; padding-left: 0;">
+                        <li><strong>Phone:</strong> (555) 123-4567</li>
+                        <li><strong>Email:</strong> <a href="mailto:info@xfedtax.com">info@xfedtax.com</a></li>
+                    </ul>
+                {% endif %}
+            </div>
+
+            <div class="box">
+                <h3>What Happens Next?</h3>
+                <ol>
+                    <li><strong>Review:</strong> We'll review your submission within 24 hours</li>
+                    <li><strong>Contact:</strong> Our team will reach out to discuss your needs</li>
+                    <li><strong>Schedule:</strong> We'll schedule a consultation at your convenience</li>
+                    <li><strong>Service:</strong> Begin working together on your financial goals</li>
+                </ol>
+            </div>
+
+            <div class="box">
+                <h3>Privacy & Security</h3>
+                <p>Your information is secure and confidential. We use industry-standard encryption to protect your data and will never share your personal information with third parties.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+// Form validation and file upload handling
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const fileInputs = document.querySelectorAll('input[type="file"]');
+
+    // File size validation (10MB max)
+    fileInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+
+            Array.from(this.files).forEach(file => {
+                if (file.size > maxSize) {
+                    alert(`File "${file.name}" is too large. Maximum file size is 10MB.`);
+                    this.value = '';
+                    return;
+                }
+            });
+        });
+    });
+
+    // Form submission handling
+    form.addEventListener('submit', function(e) {
+        const submitButton = form.querySelector('input[type="submit"]');
+        submitButton.value = 'Submitting...';
+        submitButton.disabled = true;
+
+        // Re-enable button after a delay in case of validation errors
+        setTimeout(() => {
+            submitButton.disabled = false;
+            submitButton.value = 'Submit {{ form.title }}';
+        }, 5000);
+    });
+});
+</script>
+{% endblock %}

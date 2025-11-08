@@ -75,10 +75,10 @@
 										{% block navigation_menu %}
 											{% for nav_item in nav_items %}
 												<li>
-													{% if nav_item.navigationitem_set.exists %}
+													{% if nav_item.children.exists %}
 														<span class="opener">{{ nav_item.title }}</span>
 														<ul>
-															{% for sub_item in nav_item.navigationitem_set.all %}
+															{% for sub_item in nav_item.children.all %}
 																{% if sub_item.is_active %}
 																	<li><a href="{{ sub_item.url }}">{{ sub_item.title }}</a></li>
 																{% endif %}
@@ -117,7 +117,7 @@
 												<li><a href="#">Client Testimonials</a></li>
 												<li><a href="#">Schedule Appointment</a></li>
 											{% endfor %}
-											
+
 											<!-- Dynamic Pages in Navigation -->
 											{% for page in dynamic_nav_pages %}
 												<li><a href="{{ page.get_absolute_url }}">{{ page.title }}</a></li>
