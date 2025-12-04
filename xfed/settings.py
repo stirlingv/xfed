@@ -31,7 +31,21 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-5do_6(&m-1y)@)
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'True').lower() in ['true', '1', 'yes']
 
-ALLOWED_HOSTS = ['.onrender.com', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = [
+    '.onrender.com',
+    'hirexfed.com',
+    'www.hirexfed.com',
+    '.hirexfed.com',
+    'localhost',
+    '127.0.0.1',
+]
+
+# CSRF trusted origins for production
+CSRF_TRUSTED_ORIGINS = [
+    'https://hirexfed.com',
+    'https://www.hirexfed.com',
+    'https://*.onrender.com',
+]
 
 
 # Application definition
