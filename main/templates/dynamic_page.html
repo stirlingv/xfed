@@ -19,7 +19,7 @@
                 <h2>{{ page.title }}</h2>
             </div>
         </header>
-        
+
         {% if page_sections %}
             {% for section in page_sections %}
                 <section>
@@ -27,16 +27,6 @@
                         <header>
                             <h3>{{ section.title }}</h3>
                         </header>
-                    {% elif section.section_type == 'main_content' %}
-                        <h3>{{ section.title }}</h3>
-                        <div class="content">
-                            {{ section.content|safe }}
-                        </div>
-                        {% if section.image %}
-                            <div class="image main">
-                                <img src="{{ section.image.url }}" alt="{{ section.title }}" />
-                            </div>
-                        {% endif %}
                     {% elif section.section_type == 'sidebar' %}
                         <aside>
                             <h4>{{ section.title }}</h4>
@@ -47,6 +37,19 @@
                                 </div>
                             {% endif %}
                         </aside>
+                    {% else %}
+                        {# Handle main_content and any other section types #}
+                        {% if section.title %}
+                            <h3>{{ section.title }}</h3>
+                        {% endif %}
+                        <div class="content">
+                            {{ section.content|safe }}
+                        </div>
+                        {% if section.image %}
+                            <div class="image main">
+                                <img src="{{ section.image.url }}" alt="{{ section.title }}" />
+                            </div>
+                        {% endif %}
                     {% endif %}
                 </section>
             {% endfor %}

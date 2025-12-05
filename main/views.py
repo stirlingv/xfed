@@ -86,14 +86,14 @@ def dynamic_page_view(request, slug):
         is_active=True
     ).order_by('section_type', 'order')
 
-    # Determine which template to use based on page template_type
+    # Most dynamic pages should use dynamic_page.html which properly renders page_sections
+    # Only use special templates for specific page types that need them
     template_map = {
-        'generic': 'generic.html',
-        'elements': 'elements.html',
         'index': 'index.html',
         'intake': 'intake.html',
     }
 
+    # Default to dynamic_page.html for generic and other page types
     template_name = template_map.get(page.template_type, 'dynamic_page.html')
 
     context = {

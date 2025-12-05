@@ -36,7 +36,7 @@
 								<header id="header">
 									<a href="{% url 'index' %}" class="logo">
 										{% block header_logo %}
-											<strong>XFED:</strong> Thousands of Years of Government Experience, Working For You!
+											<strong>HireXFed:</strong> Former Federal Experts, Working For You!
 										{% endblock %}
 									</a>
 									<ul class="icons">
@@ -139,7 +139,7 @@
 								<section>
 									<header class="major">
 										{% block mini_posts_title %}
-											<h2>Recent Updates</h2>
+											<h2>News & Updates</h2>
 										{% endblock %}
 									</header>
 									<div class="mini-posts">
@@ -148,30 +148,25 @@
 												<article>
 													{% if mini_post.image %}
 														<a href="#" class="image"><img src="{{ mini_post.image.url }}" alt="" /></a>
-													{% else %}
-														<a href="#" class="image"><img src="{% static 'images/pic0' %}{{ forloop.counter|add:6 }}.jpg" alt="" /></a>
 													{% endif %}
 													<p>{{ mini_post.description }}</p>
 												</article>
 											{% empty %}
 												<!-- Default mini posts if none configured -->
 												<article>
-													<a href="#" class="image"><img src="{% static 'images/pic07.jpg' %}" alt="" /></a>
-													<p>This content comes from the "Mini Posts" section in the admin. Create mini post entries to replace this placeholder with quick updates and announcements.</p>
+													<p>📅 <strong>Tax Season 2025:</strong> Key deadlines approaching. Get prepared early with our expert guidance.</p>
 												</article>
 												<article>
-													<a href="#" class="image"><img src="{% static 'images/pic08.jpg' %}" alt="" /></a>
-													<p>Mini posts are perfect for tax season updates, deadline reminders, or highlighting new services. Manage these through the Mini Posts admin section.</p>
+													<p>🆕 <strong>Now Accepting Clients:</strong> Our former IRS agents are ready to help with your tax issues.</p>
 												</article>
 												<article>
-													<a href="#" class="image"><img src="{% static 'images/pic09.jpg' %}" alt="" /></a>
-													<p>Each mini post can include an image, description, and link. Use the admin interface to easily add, edit, or remove these sidebar highlights.</p>
+													<p>💡 <strong>Did You Know?</strong> You may qualify for penalty abatement. Ask us how during your free consultation.</p>
 												</article>
 											{% endfor %}
 										{% endblock %}
 									</div>
 									<ul class="actions">
-										<li><a href="#" class="button">{% block mini_posts_button %}More{% endblock %}</a></li>
+										<li><a href="/intake/client-consultation/" class="button">{% block mini_posts_button %}Get Help{% endblock %}</a></li>
 									</ul>
 								</section>
 
@@ -183,7 +178,7 @@
 										{% endblock %}
 									</header>
 									{% block contact_description %}
-										<p>Ready to get started with professional tax services? Contact XFED Tax Solutions today. This content can be customized through the "Contact Info" section in the admin panel to personalize your contact message.</p>
+										<p>Ready to resolve your tax issues? Contact HireXFed today for a confidential consultation with a former IRS expert.</p>
 									{% endblock %}
 									<ul class="contact">
 										{% block contact_info %}
@@ -193,10 +188,10 @@
 												<li class="icon solid fa-home">{{ contact_info.address|linebreaks }}</li>
 											{% else %}
 												<!-- Default contact info if none configured -->
-												<li class="icon solid fa-envelope"><a href="#">contact@xfedtax.com</a></li>
-												<li class="icon solid fa-phone">(555) 123-XFED</li>
-												<li class="icon solid fa-home">123 Tax Professional Way<br />
-												Business District, ST 12345</li>
+												<li class="icon solid fa-envelope"><a href="mailto:help@hirexfed.com">help@hirexfed.com</a></li>
+												<li class="icon solid fa-phone">(888) HIRE-FED</li>
+												<li class="icon solid fa-home">Serving clients nationwide<br />
+												Remote consultations available</li>
 											{% endif %}
 										{% endblock %}
 									</ul>
@@ -214,7 +209,7 @@
 											<p class="copyright">{{ footer.copyright }}{% if footer.demo_images_link %} Demo Images: <a href="{{ footer.demo_images_link }}">Unsplash</a>.{% endif %}{% if footer.design_link %} Design: <a href="{{ footer.design_link }}">HTML5 UP</a>.{% endif %}</p>
 										{% else %}
 											<!-- Default footer if none configured -->
-											<p class="copyright">&copy; 2025 XFED Tax Solutions. All rights reserved. Update this copyright notice through the "Footer" section in the admin panel. Demo Images: <a href="https://unsplash.com">Unsplash</a>. Design: <a href="https://html5up.net">HTML5 UP</a>.</p>
+											<p class="copyright">&copy; 2025 HireXFed. All rights reserved. Former federal expertise, working for you.</p>
 										{% endif %}
 									{% endblock %}
 								</footer>

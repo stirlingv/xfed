@@ -54,15 +54,30 @@ class Banner(models.Model):
 
 class Feature(models.Model):
     ICON_CHOICES = [
-        ('fa-gem', 'Gem'),
-        ('fa-paper-plane', 'Paper Plane'),
-        ('fa-rocket', 'Rocket'),
-        ('fa-signal', 'Signal'),
+        ('fa-gem', '💎 Gem'),
+        ('fa-paper-plane', '✈️ Paper Plane'),
+        ('fa-rocket', '🚀 Rocket'),
+        ('fa-signal', '📶 Signal'),
+        ('fa-shield-alt', '🛡️ Shield'),
+        ('fa-file-invoice-dollar', '💵 Invoice/Dollar'),
+        ('fa-handshake', '🤝 Handshake'),
+        ('fa-building', '🏢 Building'),
+        ('fa-balance-scale', '⚖️ Balance Scale'),
+        ('fa-calculator', '🔢 Calculator'),
+        ('fa-file-alt', '📄 Document'),
+        ('fa-user-tie', '👔 Professional'),
+        ('fa-gavel', '🔨 Gavel'),
+        ('fa-landmark', '🏛️ Landmark/Government'),
+        ('fa-dollar-sign', '💲 Dollar Sign'),
+        ('fa-chart-line', '📈 Chart'),
+        ('fa-briefcase', '💼 Briefcase'),
+        ('fa-search', '🔍 Search'),
+        ('fa-check-circle', '✅ Checkmark'),
     ]
     icon = models.CharField(
         max_length=50,
         choices=ICON_CHOICES,
-        default='fa-gem',
+        default='fa-shield-alt',
         verbose_name="Feature Icon",
         help_text="Choose an icon that represents this feature"
     )

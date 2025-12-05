@@ -66,7 +66,7 @@
 <!-- Section -->
 <section>
 	<header class="major">
-		<h2>Ipsum sed dolor</h2>
+		<h2>Tax Resources & Insights</h2>
 	</header>
 	<div class="posts">
 		{% if posts %}
@@ -75,7 +75,26 @@
 				{% if post.image %}
 					<a href="{{ post.button_link|default:'#' }}" class="image"><img src="{{ post.image.url }}" alt="{{ post.title }}" /></a>
 				{% else %}
-					<a href="{{ post.button_link|default:'#' }}" class="image"><img src="{% static 'images/pic0' %}{{ forloop.counter }}.jpg" alt="{{ post.title }}" /></a>
+					{# Use new professional images based on post position #}
+					{% with images="1040.jpg,hand-shake.jpg,meeting.jpg,tax-return.jpg,postit-board.jpg,working2.jpg" %}
+					{% with image_list=images|make_list %}
+					<a href="{{ post.button_link|default:'#' }}" class="image">
+						{% if forloop.counter == 1 %}
+						<img src="{% static 'images/1040.jpg' %}" alt="{{ post.title }}" />
+						{% elif forloop.counter == 2 %}
+						<img src="{% static 'images/hand-shake.jpg' %}" alt="{{ post.title }}" />
+						{% elif forloop.counter == 3 %}
+						<img src="{% static 'images/meeting.jpg' %}" alt="{{ post.title }}" />
+						{% elif forloop.counter == 4 %}
+						<img src="{% static 'images/tax-return.jpg' %}" alt="{{ post.title }}" />
+						{% elif forloop.counter == 5 %}
+						<img src="{% static 'images/postit-board.jpg' %}" alt="{{ post.title }}" />
+						{% else %}
+						<img src="{% static 'images/working2.jpg' %}" alt="{{ post.title }}" />
+						{% endif %}
+					</a>
+					{% endwith %}
+					{% endwith %}
 				{% endif %}
 				<h3>{{ post.title }}</h3>
 				<p>{{ post.description }}</p>
@@ -87,7 +106,7 @@
 		{% else %}
 			<!-- Default posts when none exist in database -->
 			<article>
-				<a href="#" class="image"><img src="{% static 'images/pic01.jpg' %}" alt="" /></a>
+				<a href="#" class="image"><img src="{% static 'images/1040.jpg' %}" alt="" /></a>
 				<h3>Post Title 1</h3>
 				<p>This content comes from the "Posts" section in the admin. Add new posts or edit existing ones to replace this placeholder text with your actual content.</p>
 				<ul class="actions">
@@ -95,7 +114,7 @@
 				</ul>
 			</article>
 			<article>
-				<a href="#" class="image"><img src="{% static 'images/pic02.jpg' %}" alt="" /></a>
+				<a href="#" class="image"><img src="{% static 'images/hand-shake.jpg' %}" alt="" /></a>
 				<h3>Post Title 2</h3>
 				<p>This content comes from the "Posts" section in the admin. Add new posts or edit existing ones to replace this placeholder text with your actual content.</p>
 				<ul class="actions">
@@ -103,7 +122,7 @@
 				</ul>
 			</article>
 			<article>
-				<a href="#" class="image"><img src="{% static 'images/pic03.jpg' %}" alt="" /></a>
+				<a href="#" class="image"><img src="{% static 'images/meeting.jpg' %}" alt="" /></a>
 				<h3>Post Title 3</h3>
 				<p>This content comes from the "Posts" section in the admin. Add new posts or edit existing ones to replace this placeholder text with your actual content.</p>
 				<ul class="actions">
@@ -111,7 +130,7 @@
 				</ul>
 			</article>
 			<article>
-				<a href="#" class="image"><img src="{% static 'images/pic04.jpg' %}" alt="" /></a>
+				<a href="#" class="image"><img src="{% static 'images/tax-return.jpg' %}" alt="" /></a>
 				<h3>Post Title 4</h3>
 				<p>This content comes from the "Posts" section in the admin. Add new posts or edit existing ones to replace this placeholder text with your actual content.</p>
 				<ul class="actions">
@@ -119,7 +138,7 @@
 				</ul>
 			</article>
 			<article>
-				<a href="#" class="image"><img src="{% static 'images/pic05.jpg' %}" alt="" /></a>
+				<a href="#" class="image"><img src="{% static 'images/postit-board.jpg' %}" alt="" /></a>
 				<h3>Post Title 5</h3>
 				<p>This content comes from the "Posts" section in the admin. Add new posts or edit existing ones to replace this placeholder text with your actual content.</p>
 				<ul class="actions">
@@ -127,7 +146,7 @@
 				</ul>
 			</article>
 			<article>
-				<a href="#" class="image"><img src="{% static 'images/pic06.jpg' %}" alt="" /></a>
+				<a href="#" class="image"><img src="{% static 'images/working2.jpg' %}" alt="" /></a>
 				<h3>Post Title 6</h3>
 				<p>This content comes from the "Posts" section in the admin. Add new posts or edit existing ones to replace this placeholder text with your actual content.</p>
 				<ul class="actions">
