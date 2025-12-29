@@ -2144,10 +2144,10 @@ button,
     width: 50%; }
     #banner .image img {
       height: 100%;
-      -moz-object-fit: cover;
-      -webkit-object-fit: cover;
-      -ms-object-fit: cover;
-      object-fit: cover;
+      -moz-object-fit: contain;
+      -webkit-object-fit: contain;
+      -ms-object-fit: contain;
+      object-fit: contain;
       -moz-object-position: center;
       -webkit-object-position: center;
       -ms-object-position: center;
@@ -2275,3 +2275,95 @@ button,
     border-top: 0;
     margin-top: 0;
     padding-top: 0; }
+
+/* Join Network CTA Section */
+.join-network-cta {
+  background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%);
+  padding: 2.5em 2em;
+  margin: 0 0 2em 0;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15); }
+
+.join-network-cta .cta-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1.5em;
+  max-width: 1200px;
+  margin: 0 auto; }
+
+.join-network-cta .cta-content {
+  display: flex;
+  align-items: center;
+  gap: 1.5em;
+  flex: 1;
+  min-width: 300px; }
+
+.join-network-cta .cta-icon {
+  font-size: 3em;
+  color: #f6ad55;
+  flex-shrink: 0; }
+
+.join-network-cta .cta-text h2 {
+  color: #ffffff;
+  margin: 0 0 0.3em 0;
+  font-size: 1.5em; }
+
+.join-network-cta .cta-text p {
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0;
+  font-size: 1em;
+  line-height: 1.5; }
+
+.join-network-cta .cta-text strong {
+  color: #f6ad55; }
+
+.join-network-cta .cta-actions {
+  display: flex;
+  gap: 1em;
+  flex-shrink: 0; }
+
+.join-network-cta .button.primary {
+  background-color: #f6ad55;
+  color: #1a365d;
+  font-weight: 600;
+  border: none; }
+
+.join-network-cta .button.primary:hover {
+  background-color: #ed8936; }
+
+.join-network-cta .button:not(.primary) {
+  background-color: transparent;
+  color: #ffffff;
+  border: 2px solid rgba(255, 255, 255, 0.5); }
+
+.join-network-cta .button:not(.primary):hover {
+  border-color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.1); }
+
+/* Responsive adjustments for CTA */
+@media screen and (max-width: 980px) {
+  .join-network-cta .cta-container {
+    flex-direction: column;
+    text-align: center; }
+
+  .join-network-cta .cta-content {
+    flex-direction: column; }
+
+  .join-network-cta .cta-actions {
+    flex-direction: column;
+    width: 100%; }
+
+  .join-network-cta .cta-actions .button {
+    width: 100%; } }
+
+@media screen and (max-width: 480px) {
+  .join-network-cta {
+    padding: 1.5em 1em; }
+
+  .join-network-cta .cta-icon {
+    font-size: 2.5em; }
+
+  .join-network-cta .cta-text h2 {
+    font-size: 1.25em; } }

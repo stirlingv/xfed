@@ -19,7 +19,7 @@ def index(request):
             subheading="Former Feds Making The System Work For You!",
             description1="XFED Tax Solutions is committed to providing efficient and effective tax and tax related services to America's taxpayer population.",
             description2="Whether you are an individual or business or both, America's largest network of former IRS tax professionals can provide the services you need.",
-            description3="For specific information about how we can help you, please fill out our <a href='#'>brief questionnaire</a> or call us at [Justin's Personal Cell Phone Number].",
+            description3="For specific information about how we can help you, please <a href='/intake/client-consultation/'>request a consultation</a> and one of our experts will contact you within 24 hours.",
             button_text="Learn More",
             button_link="#"
         )

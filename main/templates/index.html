@@ -33,6 +33,23 @@
 	{% endif %}
 </section>
 
+<!-- Former Federal Employee CTA -->
+<section id="join-cta" class="join-network-cta">
+	<div class="cta-container">
+		<div class="cta-content">
+			<span class="icon solid fa-user-tie cta-icon"></span>
+			<div class="cta-text">
+				<h2>Former Federal Employee?</h2>
+				<p>Join our network of experts and help Americans navigate the system you know inside and out. <strong>Earn 75-80% of client fees</strong> while working on your own schedule.</p>
+			</div>
+		</div>
+		<div class="cta-actions">
+			<a href="/intake/join-our-team/" class="button primary large">Apply to Join Our Team</a>
+			<a href="/members/" class="button">Learn More</a>
+		</div>
+	</div>
+</section>
+
 <!-- Section -->
 <section>
 	<header class="major">
@@ -45,7 +62,7 @@
 				<span class="icon solid {{ feature.icon }}"></span>
 				<div class="content">
 					<h3>{{ feature.title }}</h3>
-					<p>{{ feature.description }}</p>
+					<p>{{ feature.description|safe }}</p>
 				</div>
 			</article>
 			{% endfor %}
@@ -55,7 +72,7 @@
 				<span class="icon solid {{ feature.icon }}"></span>
 				<div class="content">
 					<h3>{{ feature.title }}</h3>
-					<p>{{ feature.description }}</p>
+					<p>{{ feature.description|safe }}</p>
 				</div>
 			</article>
 			{% endfor %}

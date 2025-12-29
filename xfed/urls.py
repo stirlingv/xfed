@@ -15,13 +15,23 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
+from django.contrib.sitemaps.views import sitemap
 from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
+from django.views.generic import TemplateView
 from main import views
+from main.sitemaps import StaticViewSitemap, DynamicPageSitemap
+
+sitemaps = {
+    'static': StaticViewSitemap,
+    'pages': DynamicPageSitemap,
+}
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('sitemap.xml', sitemap, {'sitemaps': sitemaps}, name='sitemap'),
+    path('robots.txt', TemplateView.as_view(template_name='robots.txt', content_type='text/plain'), name='robots'),
     path('', views.index, name='index'),
     path('generic/', views.generic, name='generic'),
     path('elements/', views.elements, name='elements'),
@@ -29,8 +39,10 @@ urlpatterns = [
     path('admin-helper/add-page/', views.add_page_popup, name='add_page_popup'),
     # Intake forms
     path('intake/<slug:slug>/', views.intake_form_view, name='intake_form'),
-    # Dynamic pages - this should be last to catch custom page URLs
+    # Dynamic pages - these should be last to catch custom page URLs
     path('<slug:slug>/', views.dynamic_page_view, name='dynamic_page'),
+    # Nested dynamic pages (e.g., tax-solutions/services)
+    path('<path:slug>/', views.dynamic_page_view, name='dynamic_page_nested'),
 ]
 
 # Serve static and media files during development

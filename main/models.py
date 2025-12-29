@@ -24,7 +24,7 @@ class Banner(models.Model):
         help_text="The second paragraph of text in the banner section"
     )
     description3 = models.TextField(
-        default="For specific information about how we can help you, please fill out our <a href='#'>brief questionnaire</a> or call us at [Justin's Personal Cell Phone Number].",
+        default="For specific information about how we can help you, please <a href='/intake/client-consultation/'>request a consultation</a> and one of our experts will contact you within 24 hours.",
         verbose_name="Third Description Paragraph",
         help_text="The third paragraph of text in the banner section. You can include HTML links like <a href='#'>link text</a>"
     )
@@ -73,6 +73,11 @@ class Feature(models.Model):
         ('fa-briefcase', '💼 Briefcase'),
         ('fa-search', '🔍 Search'),
         ('fa-check-circle', '✅ Checkmark'),
+        ('fa-id-card', '🪪 ID Card'),
+        ('fa-database', '🗄️ Database'),
+        ('fa-laptop-code', '💻 Laptop/Code'),
+        ('fa-server', '🖥️ Server'),
+        ('fa-network-wired', '🌐 Network'),
     ]
     icon = models.CharField(
         max_length=50,

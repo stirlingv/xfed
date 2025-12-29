@@ -1,0 +1,12 @@
+# Robots.txt for HireXFed
+# Allow all search engines to crawl the site
+
+User-agent: *
+Allow: /
+
+# Disallow admin and private areas
+Disallow: /admin/
+Disallow: /admin-helper/
+
+# Sitemap location
+Sitemap: https://hirexfed.com/sitemap.xml

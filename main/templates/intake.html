@@ -157,20 +157,17 @@
 
                 {% if contact_info %}
                     <ul style="list-style: none; padding-left: 0;">
-                        {% if contact_info.phone %}
-                            <li><strong>Phone:</strong> {{ contact_info.phone }}</li>
-                        {% endif %}
                         {% if contact_info.email %}
                             <li><strong>Email:</strong> <a href="mailto:{{ contact_info.email }}">{{ contact_info.email }}</a></li>
                         {% endif %}
                         {% if contact_info.address %}
-                            <li><strong>Address:</strong> {{ contact_info.address|linebreaks }}</li>
+                            <li><strong>Address:</strong><br>{{ contact_info.address|linebreaks }}</li>
                         {% endif %}
                     </ul>
                 {% else %}
                     <ul style="list-style: none; padding-left: 0;">
-                        <li><strong>Phone:</strong> (555) 123-4567</li>
-                        <li><strong>Email:</strong> <a href="mailto:info@xfedtax.com">info@xfedtax.com</a></li>
+                        <li><strong>Email:</strong> <a href="mailto:help@hirexfed.com">help@hirexfed.com</a></li>
+                        <li>Serving clients nationwide<br>Remote consultations available</li>
                     </ul>
                 {% endif %}
             </div>
