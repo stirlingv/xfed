@@ -141,7 +141,7 @@
                     <!-- Submit Button -->
                     <div class="col-12">
                         <ul class="actions">
-                            <li><input type="submit" value="Submit {{ form.title }}" class="primary" /></li>
+                            <li><input type="submit" value="Submit" class="primary" /></li>
                             <li><input type="reset" value="Clear Form" /></li>
                         </ul>
                     </div>
@@ -220,7 +220,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Re-enable button after a delay in case of validation errors
         setTimeout(() => {
             submitButton.disabled = false;
-            submitButton.value = 'Submit {{ form.title }}';
+            submitButton.value = 'Submit';
         }, 5000);
     });
 });

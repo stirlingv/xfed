@@ -340,7 +340,7 @@ class Command(BaseCommand):
                 'field_name': 'phone',
                 'field_type': 'phone',
                 'placeholder': '(555) 123-4567',
-                'is_required': True,
+                'is_required': False,
                 'order': 3
             },
             {
@@ -348,7 +348,7 @@ class Command(BaseCommand):
                 'field_name': 'location',
                 'field_type': 'text',
                 'placeholder': 'Washington, DC',
-                'is_required': True,
+                'is_required': False,
                 'order': 4
             },
             {
@@ -356,7 +356,7 @@ class Command(BaseCommand):
                 'field_name': 'agency',
                 'field_type': 'select',
                 'choices': 'Internal Revenue Service (IRS)\nDepartment of Treasury\nGovernment Accountability Office (GAO)\nTax Court\nDepartment of Justice - Tax Division\nState Tax Agency\nOther Federal Agency',
-                'is_required': True,
+                'is_required': False,
                 'order': 5
             },
             {
@@ -364,7 +364,7 @@ class Command(BaseCommand):
                 'field_name': 'last_position',
                 'field_type': 'text',
                 'placeholder': 'e.g., Revenue Agent, Revenue Officer, Appeals Officer',
-                'is_required': True,
+                'is_required': False,
                 'order': 6
             },
             {
@@ -372,7 +372,7 @@ class Command(BaseCommand):
                 'field_name': 'years_service',
                 'field_type': 'select',
                 'choices': 'Less than 5 years\n5-10 years\n10-15 years\n15-20 years\n20-25 years\n25+ years',
-                'is_required': True,
+                'is_required': False,
                 'order': 7
             },
             {
@@ -380,7 +380,7 @@ class Command(BaseCommand):
                 'field_name': 'separation_year',
                 'field_type': 'text',
                 'placeholder': 'e.g., 2023',
-                'is_required': True,
+                'is_required': False,
                 'order': 8
             },
             {
@@ -388,7 +388,7 @@ class Command(BaseCommand):
                 'field_name': 'credentials',
                 'field_type': 'select',
                 'choices': 'Enrolled Agent (EA)\nCertified Public Accountant (CPA)\nAttorney (JD)\nCertified Financial Planner (CFP)\nOther Professional License\nNone Currently',
-                'is_required': True,
+                'is_required': False,
                 'order': 9
             },
             {
@@ -396,7 +396,7 @@ class Command(BaseCommand):
                 'field_name': 'expertise',
                 'field_type': 'select',
                 'choices': 'Individual Tax Examination/Audit\nBusiness Tax Examination\nCollection (Liens, Levies, Seizures)\nOffers in Compromise\nAppeals\nCriminal Investigation\nInternational Tax\nEstate & Gift Tax\nExcise Tax\nTax-Exempt Organizations\nEmployee Plans\nOther',
-                'is_required': True,
+                'is_required': False,
                 'order': 10
             },
             {
@@ -404,7 +404,7 @@ class Command(BaseCommand):
                 'field_name': 'experience_description',
                 'field_type': 'textarea',
                 'placeholder': 'Please describe your federal experience, key accomplishments, and the types of cases you worked on...',
-                'is_required': True,
+                'is_required': False,
                 'order': 11,
                 'help_text': 'This helps us match you with appropriate client cases.'
             },
@@ -413,7 +413,7 @@ class Command(BaseCommand):
                 'field_name': 'availability',
                 'field_type': 'radio',
                 'choices': 'Fully retired - available for significant work\nPartially retired - available for limited engagements\nCurrently employed - looking for side work\nSelf-employed - looking to expand client base',
-                'is_required': True,
+                'is_required': False,
                 'order': 12
             },
             {
@@ -421,14 +421,14 @@ class Command(BaseCommand):
                 'field_name': 'work_preference',
                 'field_type': 'select',
                 'choices': 'Remote only\nIn-person only (local clients)\nHybrid (remote + occasional in-person)\nNo preference',
-                'is_required': True,
+                'is_required': False,
                 'order': 13
             },
             {
                 'label': 'Upload Resume/CV',
                 'field_name': 'resume',
                 'field_type': 'file',
-                'is_required': True,
+                'is_required': False,
                 'order': 14,
                 'help_text': 'Please upload your current resume. Accepted formats: PDF, DOC, DOCX'
             },

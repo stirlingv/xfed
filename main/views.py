@@ -145,14 +145,44 @@ def handle_intake_submission(request, form):
         form_data = {}
         files_uploaded = []
 
-        # Process configured form fields
+
+        # Process configured form fields and collect email for validation
+        email_value = None
+        email_field_name = None
         for field in form.fields.all():
             field_value = request.POST.get(field.field_name)
+            if field.field_type == 'email':
+                email_value = field_value
+                email_field_name = field.field_name
             if field_value:
                 form_data[field.label] = field_value
             elif field.is_required:
                 messages.error(request, f"{field.label} is required.")
                 return redirect('intake_form', slug=form.slug)
+
+        # Email format validation
+        from django.core.validators import validate_email
+        from django.core.exceptions import ValidationError
+        if email_value:
+            try:
+                validate_email(email_value)
+            except ValidationError:
+                messages.error(request, "Please enter a valid email address.")
+                return redirect('intake_form', slug=form.slug)
+        else:
+            messages.error(request, "Email address is required.")
+            return redirect('intake_form', slug=form.slug)
+
+        # Prevent duplicate submissions per email per form
+        # IntakeSubmission stores data as JSON, so we need to search for submissions with the same form and email
+        from django.db.models import Q
+        duplicate = IntakeSubmission.objects.filter(
+            form=form,
+            data__icontains=email_value
+        ).exists()
+        if duplicate:
+            messages.error(request, "A submission with this email address has already been received for this form. Please contact us if you need to update your information.")
+            return redirect('intake_form', slug=form.slug)
 
         # Handle file uploads
         uploaded_files = []
@@ -187,8 +217,8 @@ def handle_intake_submission(request, form):
         # Send email notification
         send_intake_notification(form, submission, form_data, uploaded_files)
 
-        messages.success(request, form.success_message)
-        return redirect('intake_form', slug=form.slug)
+        # Show confirmation page after successful submission
+        return render(request, 'intake_confirmation.html', { 'form': form })
 
     except Exception as e:
         messages.error(request, f"There was an error processing your submission: {str(e)}")
