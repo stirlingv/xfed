@@ -18,7 +18,7 @@
 			padding: 0;
 			text-transform: uppercase;
 
-			a, span {
+			a, span, button {
 				border-bottom: 0;
 				color: inherit;
 				cursor: pointer;
@@ -35,6 +35,11 @@
 					@include icon(false, solid);
 					-webkit-tap-highlight-color: rgba(255,255,255,0);
 					position: relative;
+					background: none;
+					border: 0;
+					font: inherit;
+					outline: none;
+					box-shadow: none;
 
 					&:before {
 						@include vendor('transition', (
@@ -43,8 +48,8 @@
 						));
 						color: _palette(fg-light);
 						content: '\f078';
-						position: absolute;
-						right: 0;
+						display: inline-block;
+						margin-left: 0.35em;
 					}
 
 					&:hover {
@@ -53,15 +58,18 @@
 						}
 					}
 
-					&.active {
-						& + ul {
-							display: block;
-						}
+				}
 
-						&:before {
-							@include vendor('transform', 'rotate(-180deg)');
-						}
-					}
+				&.menu-link {
+					flex: 1 1 auto;
+					margin: 0;
+					padding: 0.5em 0;
+				}
+
+				&.opener {
+					flex: 0 0 auto;
+					padding: 0.5em 0;
+					text-align: left;
 				}
 			}
 		}
@@ -69,13 +77,29 @@
 		> ul {
 			> li {
 				border-top: solid 1px _palette(border);
-				margin: 0.5em 0 0 0;
-				padding: 0.5em 0 0 0;
+				margin: 0.35em 0 0 0;
+				padding: 0.35em 0 0 0;
+
+				&.has-children {
+					align-items: baseline;
+					display: flex;
+					gap: 0.15em;
+					flex-wrap: wrap;
+				}
+
+				.menu-parent {
+					align-items: baseline;
+					display: flex;
+					flex: 1 1 auto;
+					gap: 0.15em;
+					width: 100%;
+				}
 
 				> ul {
 					color: _palette(fg-light);
 					display: none;
-					margin: 0.5em 0 1.5em 0;
+					flex-basis: 100%;
+					margin: 0.35em 0 1em 0;
 					padding-left: 1em;
 
 					a, span {
@@ -96,3 +120,12 @@
 			}
 		}
 	}
+				&.is-open {
+					> ul {
+						display: block;
+					}
+
+					.opener:before {
+						@include vendor('transform', 'rotate(-180deg)');
+					}
+				}

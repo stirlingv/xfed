@@ -238,23 +238,82 @@
 		var $menu = $('#menu'),
 			$menu_openers = $menu.children('ul').find('.opener');
 
+		var storageKey = 'xfed_menu_open';
+
+		var readOpenMenuIds = function() {
+			try {
+				return JSON.parse(localStorage.getItem(storageKey)) || [];
+			} catch (e) {
+				return [];
+			}
+		};
+
+		var writeOpenMenuIds = function(ids) {
+			try {
+				localStorage.setItem(storageKey, JSON.stringify(ids));
+			} catch (e) {
+				// Ignore storage failures.
+			}
+		};
+
+		var updateStoredMenus = function($parent, isOpen) {
+			var id = $parent.data('menu-id');
+			if (!id)
+				return;
+
+			var ids = readOpenMenuIds();
+			if (isOpen) {
+				if (ids.indexOf(id) === -1)
+					ids.push(id);
+			} else {
+				ids = ids.filter(function(value) { return value !== id; });
+			}
+			writeOpenMenuIds(ids);
+		};
+
+		var hydrateMenus = function() {
+			var ids = readOpenMenuIds();
+			if (!ids.length)
+				return;
+
+			$menu.children('ul').find('li.has-children').each(function() {
+				var $parent = $(this);
+				if (ids.indexOf($parent.data('menu-id')) !== -1)
+					$parent.addClass('is-open');
+			});
+		};
+
+		hydrateMenus();
+
 		// Openers.
 			$menu_openers.each(function() {
 
 				var $this = $(this);
 
 				$this.on('click', function(event) {
-
 					// Prevent default.
 						event.preventDefault();
 
 					// Toggle.
-						$menu_openers.not($this).removeClass('active');
-						$this.toggleClass('active');
+						var $parent = $this.closest('li');
+						$parent.toggleClass('is-open');
+						updateStoredMenus($parent, $parent.hasClass('is-open'));
 
 					// Trigger resize (sidebar lock).
 						$window.triggerHandler('resize.sidebar-lock');
 
+				});
+
+				$this.on('keydown', function(event) {
+					if (event.key !== 'Enter' && event.key !== ' ') {
+						return;
+					}
+
+					event.preventDefault();
+					var $parent = $this.closest('li');
+					$parent.toggleClass('is-open');
+					updateStoredMenus($parent, $parent.hasClass('is-open'));
+					$window.triggerHandler('resize.sidebar-lock');
 				});
 
 			});

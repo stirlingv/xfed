@@ -83,9 +83,12 @@
 									<ul>
 										{% block navigation_menu %}
 											{% for nav_item in nav_items %}
-												<li>
+												<li{% if nav_item.children.exists %} class="has-children" data-menu-id="{{ nav_item.url }}"{% endif %}>
 													{% if nav_item.children.exists %}
-														<span class="opener">{{ nav_item.title }}</span>
+														<div class="menu-parent">
+															<a class="menu-link" href="{{ nav_item.url }}">{{ nav_item.title }}</a>
+															<button class="opener" type="button" aria-label="Toggle submenu for {{ nav_item.title }}"></button>
+														</div>
 														<ul>
 															{% for sub_item in nav_item.children.all %}
 																{% if sub_item.is_active %}

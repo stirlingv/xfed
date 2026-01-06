@@ -745,6 +745,7 @@ class Command(BaseCommand):
 
 <p style="text-align: center; margin-top: 2em;">
     <a href="/intake/join-our-team/" class="button primary large">Apply to Join the Network</a>
+    <a href="/members/faq/" class="button" style="margin-left: 1em;">Member FAQ</a>
 </p>''',
             order=1,
             is_active=True
@@ -801,6 +802,70 @@ class Command(BaseCommand):
 
 <p style="text-align: center; margin-top: 2em;">
     <a href="/intake/join-our-team/" class="button primary large">Apply to Join</a>
+</p>''',
+            order=1,
+            is_active=True
+        )
+
+        # Member FAQ Page
+        member_faq, _ = DynamicPage.objects.update_or_create(
+            slug='members/faq',
+            defaults={
+                'title': 'Member FAQ',
+                'template_type': 'generic',
+                'meta_description': 'Frequently asked questions about joining the HireXFed member network.',
+                'is_published': True,
+                'show_in_navigation': False
+            }
+        )
+
+        PageContent.objects.filter(page='members/faq').delete()
+        PageContent.objects.create(
+            page='members/faq',
+            section_type='main_content',
+            title='Member Frequently Asked Questions',
+            content='''<p class="lead">Answers for former federal professionals considering membership.</p>
+
+<h3>Why should I join the network?</h3>
+<p>By joining the network of ex-federal employees, you add your years of experience and expertise to a collective group that benefits you, other former federal employees, and the public at large. Your participation expands the shared knowledge base and helps everyone deliver better outcomes.</p>
+<p>Beyond the $100 annual membership fee, the requirements are minimal: a computer, internet access, and a valid PTIN for income tax preparers.</p>
+<p>As a member, you are eligible to participate in income-producing network activities aligned with your experience. You control how much work you perform and when and where you do it. As independent contractors, members may also take applicable business deductions afforded to self-employed individuals.</p>
+
+<h3>If I decide to join, do I have any obligations?</h3>
+<p>Once you are accepted and pay the annual fee, there is nothing else required. You will receive an email address and access to the network communication platform. For tax professionals, you will also receive credentials for the online tax preparation software.</p>
+<p>As work comes in, you will be offered projects that match your experience. You can accept or decline any project. Members can also share questions and solutions through the communication platform to support one another.</p>
+
+<h3>What can I expect after joining?</h3>
+<p>The network is newly established. We will pursue new business through social media, Small Business Associations, Chambers of Commerce, and word of mouth. Our initial focus will be small businesses, but the network will accept any clients that align with member expertise and available services.</p>
+<p>Workload in the first year may be lighter than desired, but as membership and awareness grow, we expect more opportunities for members.</p>
+
+<h3>How are member fees allocated for tax services?</h3>
+<p>Income tax services consist of preparation and review processes:</p>
+<ul>
+    <li>Members who prepare the return receive 50% of the total fee.</li>
+    <li>Members who review the return receive 20% of the total fee.</li>
+    <li>If a member provides their own client and chooses not to have a reviewer, the additional 20% is paid to the preparer.</li>
+    <li>Members who provide subject matter expertise receive up to 10% of the total fee, split among contributors as determined by the preparer.</li>
+    <li>If no subject matter expertise is required, the additional 10% is paid to the preparer.</li>
+</ul>
+<p>The remaining 20% supports network administration, including network management, website maintenance, communication platform fees, and online tax program fees. For other services, members retain 80% of the total fee.</p>
+
+<h3>I already have, or plan to open, my own tax practice. Does this still help me?</h3>
+<p>Yes. By joining the network, you gain access to the online tax preparation software and a shared knowledge base. This can reduce your costs and provide clients with the added benefit of nationwide support from ex-IRS professionals.</p>
+<p>Since you bring your own clients, you can retain up to 80% of fees. Administration and program fees of 20% are paid to the network. Any personal fees that differ from network pricing (see <a href="/tax-solutions/services/">Tax Services &amp; Pricing</a>) must be agreed upon with network administrators.</p>
+
+<h3>How do I apply?</h3>
+<ol>
+    <li>Complete the membership application on the HireXFed website.</li>
+    <li>Upload a current resume (federal employment history, education, and certifications).</li>
+    <li>Our team reviews your information to confirm a mutual fit.</li>
+    <li>Upon approval, you receive a membership agreement outlining requirements and details.</li>
+    <li>Sign the agreement and submit the $100 membership fee.</li>
+    <li>Once received, you will be issued an email address, access to the communication platform, and access to the online tax preparation software.</li>
+</ol>
+
+<p style="text-align: center; margin-top: 2em;">
+    <a href="/intake/join-our-team/" class="button primary large">Apply to Join the Network</a>
 </p>''',
             order=1,
             is_active=True
@@ -965,14 +1030,40 @@ class Command(BaseCommand):
         nav_items = [
             {'title': 'Home', 'url': '/', 'order': 10},
             {'title': 'Services', 'url': '/services/', 'order': 20},
-            {'title': 'Tax Solutions', 'url': '/tax-solutions/', 'order': 30},
             {'title': 'How It Works', 'url': '/how-it-works/', 'order': 40},
             {'title': 'About', 'url': '/about/', 'order': 50},
-            {'title': 'Join the Network', 'url': '/members/', 'order': 60},
             {'title': 'Get Help Now', 'url': '/intake/client-consultation/', 'order': 70},
         ]
 
         for item in nav_items:
             NavigationItem.objects.create(**item, is_active=True)
+
+        tax_solutions = NavigationItem.objects.create(
+            title='Tax Solutions',
+            url='/tax-solutions/',
+            order=30,
+            is_active=True
+        )
+        NavigationItem.objects.create(
+            title='Tax Services & Pricing',
+            url='/tax-solutions/services/',
+            parent=tax_solutions,
+            order=10,
+            is_active=True
+        )
+
+        join_network = NavigationItem.objects.create(
+            title='Join the Network',
+            url='/intake/join-our-team/',
+            order=60,
+            is_active=True
+        )
+        NavigationItem.objects.create(
+            title='Member FAQ',
+            url='/members/faq/',
+            parent=join_network,
+            order=10,
+            is_active=True
+        )
 
         self.stdout.write(self.style.SUCCESS(' Done'))
