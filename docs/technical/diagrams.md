@@ -160,7 +160,7 @@ classDiagram
 
 ```mermaid
 flowchart LR
-    user[User Browser] -->|HTTPS POST (assumed TLS)| intake_form[Intake form endpoint]
+    user[User Browser] -->|"HTTPS POST (assumed TLS)"| intake_form[Intake form endpoint]
     intake_form --> validate[Validate required fields + email]
     validate -->|ok| save_submission[Create IntakeSubmission]
     validate -->|error| return_error[Return error message]
@@ -194,7 +194,7 @@ flowchart LR
     create_page --> db[(Database)]
     edit_sections --> db
 
-    visitor[Site Visitor] --> request_page[Request /{slug}/]
+    visitor[Site Visitor] --> request_page["Request /:slug/"]
     request_page --> page_view[dynamic_page_view]
     page_view --> db
     page_view --> render[Render template + page sections]
@@ -223,7 +223,7 @@ flowchart LR
 flowchart LR
     request[Page Request] --> context_proc[context_processors]
     context_proc --> nav_items[Fetch NavigationItem tree]
-    context_proc --> dyn_pages[Fetch DynamicPage (show_in_navigation)]
+    context_proc --> dyn_pages["Fetch DynamicPage show_in_navigation"]
     nav_items --> render_menu[Render base.html menu]
     dyn_pages --> render_menu
     render_menu --> response[HTML Response]
