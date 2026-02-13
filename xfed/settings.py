@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 import dj_database_url
 
@@ -20,6 +21,14 @@ load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+def _env_bool(name, default=False):
+    return os.environ.get(name, str(default)).lower() in ['true', '1', 'yes']
+
+
+# Toggle S3-backed media storage. Keep disabled by default for local development.
+USE_S3_FOR_MEDIA = _env_bool('USE_S3_FOR_MEDIA', False)
 
 
 # Quick-start development settings - unsuitable for production
@@ -62,6 +71,9 @@ INSTALLED_APPS = [
     'django.contrib.sitemaps',
     'main.apps.MainConfig'
 ]
+
+if USE_S3_FOR_MEDIA:
+    INSTALLED_APPS.append('storages')
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -145,13 +157,73 @@ STATICFILES_DIRS = [
 # Static files collection for production
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-# WhiteNoise configuration for serving static files in production
-if not DEBUG:
-    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-
 # Media files (user uploads)
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+if USE_S3_FOR_MEDIA:
+    AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME')
+    if not AWS_STORAGE_BUCKET_NAME:
+        raise ImproperlyConfigured(
+            "AWS_STORAGE_BUCKET_NAME must be set when USE_S3_FOR_MEDIA=True"
+        )
+
+    AWS_S3_REGION_NAME = os.environ.get('AWS_S3_REGION_NAME')
+    AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', '')
+    AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', '')
+    AWS_S3_CUSTOM_DOMAIN = os.environ.get('AWS_S3_CUSTOM_DOMAIN', '')
+    AWS_MEDIA_LOCATION = os.environ.get('AWS_MEDIA_LOCATION', 'media')
+    AWS_DEFAULT_ACL = None
+    AWS_QUERYSTRING_AUTH = _env_bool('AWS_QUERYSTRING_AUTH', True)
+    AWS_S3_FILE_OVERWRITE = False
+    AWS_S3_OBJECT_PARAMETERS = {
+        'CacheControl': 'max-age=86400',
+    }
+
+    if AWS_S3_CUSTOM_DOMAIN:
+        MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/{AWS_MEDIA_LOCATION}/'
+    elif AWS_S3_REGION_NAME:
+        MEDIA_URL = (
+            f'https://{AWS_STORAGE_BUCKET_NAME}.s3.'
+            f'{AWS_S3_REGION_NAME}.amazonaws.com/{AWS_MEDIA_LOCATION}/'
+        )
+    else:
+        MEDIA_URL = f'https://{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com/{AWS_MEDIA_LOCATION}/'
+
+    MEDIA_ROOT = ''
+else:
+    MEDIA_URL = '/media/'
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+staticfiles_backend = (
+    'whitenoise.storage.CompressedManifestStaticFilesStorage'
+    if not DEBUG
+    else 'django.contrib.staticfiles.storage.StaticFilesStorage'
+)
+
+if USE_S3_FOR_MEDIA:
+    STORAGES = {
+        'default': {
+            'BACKEND': 'storages.backends.s3.S3Storage',
+            'OPTIONS': {
+                'bucket_name': AWS_STORAGE_BUCKET_NAME,
+                'location': AWS_MEDIA_LOCATION,
+                'default_acl': AWS_DEFAULT_ACL,
+                'querystring_auth': AWS_QUERYSTRING_AUTH,
+                'file_overwrite': AWS_S3_FILE_OVERWRITE,
+                'object_parameters': AWS_S3_OBJECT_PARAMETERS,
+            },
+        },
+        'staticfiles': {
+            'BACKEND': staticfiles_backend,
+        },
+    }
+else:
+    STORAGES = {
+        'default': {
+            'BACKEND': 'django.core.files.storage.FileSystemStorage',
+        },
+        'staticfiles': {
+            'BACKEND': staticfiles_backend,
+        },
+    }
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

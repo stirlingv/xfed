@@ -1,5 +1,43 @@
+from pathlib import Path
+
 from django.db import models
+from django.utils import timezone
+from django.utils.text import get_valid_filename
 from .validators import validate_resume_upload
+
+
+TALENT_FORM_SLUG_HINTS = (
+    "join",
+    "team",
+    "talent",
+    "network",
+    "expert",
+    "resume",
+)
+
+
+def _is_talent_submission(submission):
+    if not submission:
+        return False
+
+    form = getattr(submission, "form", None)
+    if not form:
+        return False
+
+    slug = (getattr(form, "slug", "") or "").lower()
+    title = (getattr(form, "title", "") or "").lower()
+    return any(hint in slug for hint in TALENT_FORM_SLUG_HINTS) or any(
+        hint in title for hint in TALENT_FORM_SLUG_HINTS
+    )
+
+
+def intake_file_upload_path(instance, filename):
+    """
+    Route talent uploads to resumes/ and client uploads to client-docs/.
+    """
+    safe_filename = get_valid_filename(Path(filename or "upload").name) or "upload"
+    prefix = "resumes" if _is_talent_submission(instance.submission) else "client-docs"
+    return f"{prefix}/{timezone.now():%Y/%m}/{safe_filename}"
 
 class Banner(models.Model):
     heading = models.CharField(
@@ -537,7 +575,7 @@ class IntakeFile(models.Model):
         verbose_name="Form Submission"
     )
     file = models.FileField(
-        upload_to='intake_uploads/%Y/%m/',
+        upload_to=intake_file_upload_path,
         verbose_name="Uploaded File"
     )
     original_filename = models.CharField(

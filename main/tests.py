@@ -208,6 +208,56 @@ class IntakeFileCleanupTests(TestCase):
         self.assertFalse(second_storage.exists(second_name))
 
 
+class IntakeFileUploadRoutingTests(TestCase):
+    def setUp(self):
+        self.temp_media_root = tempfile.mkdtemp(prefix="xfed-routing-media-")
+        self.media_override = override_settings(MEDIA_ROOT=self.temp_media_root)
+        self.media_override.enable()
+
+    def tearDown(self):
+        self.media_override.disable()
+        shutil.rmtree(self.temp_media_root, ignore_errors=True)
+
+    def _create_file_for_form(self, form_slug, form_title):
+        form = IntakeForm.objects.create(
+            title=form_title,
+            slug=form_slug,
+            email_recipients="ops@examplebusiness.com",
+            allow_file_uploads=True,
+        )
+        submission = IntakeSubmission.objects.create(
+            form=form,
+            data={"Email Address": f"{form_slug}@examplebusiness.com"},
+        )
+        return IntakeFile.objects.create(
+            submission=submission,
+            file=SimpleUploadedFile(
+                "upload.pdf",
+                b"%PDF-1.7\n1 0 obj\n<<>>\n",
+                content_type="application/pdf",
+            ),
+            original_filename="upload.pdf",
+        )
+
+    def test_talent_form_uploads_are_routed_to_resumes_prefix(self):
+        intake_file = self._create_file_for_form("join-our-team", "Join Our Team")
+        self.assertTrue(intake_file.file.name.startswith("resumes/"))
+
+    def test_client_form_uploads_are_routed_to_client_docs_prefix(self):
+        intake_file = self._create_file_for_form(
+            "client-consultation",
+            "Client Consultation",
+        )
+        self.assertTrue(intake_file.file.name.startswith("client-docs/"))
+
+    def test_unclassified_form_uploads_default_to_client_docs_prefix(self):
+        intake_file = self._create_file_for_form(
+            "general-intake",
+            "General Intake",
+        )
+        self.assertTrue(intake_file.file.name.startswith("client-docs/"))
+
+
 class SetupHireXfedContentCommandTests(TestCase):
     def test_default_mode_preserves_existing_submissions(self):
         form = IntakeForm.objects.create(
