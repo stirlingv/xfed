@@ -1,3 +1,9 @@
+import base64
+import logging
+from urllib.error import HTTPError, URLError
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen
+
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.core.mail import EmailMessage
@@ -12,6 +18,9 @@ from .validators import (
     normalize_and_validate_submission_email,
     validate_resume_upload,
 )
+
+logger = logging.getLogger(__name__)
+
 
 def index(request):
     """Homepage view with banner and features"""
@@ -336,8 +345,100 @@ def send_intake_notification(form, submission, form_data, uploaded_files):
 
             email.send()
 
+        if _should_notify_owners(form):
+            _send_owner_email_alert(subject, message_body)
+            _send_owner_sms_alert(form, submission, form_data, uploaded_files)
+
     except Exception as e:
-        print(f"Error sending intake notification email: {str(e)}")
+        logger.exception("Error sending intake notification for form '%s': %s", form.slug, str(e))
+
+
+def _should_notify_owners(form):
+    owner_form_slugs = getattr(settings, 'OWNER_NOTIFICATION_FORM_SLUGS', [])
+    if not owner_form_slugs:
+        return False
+    return (form.slug or '').lower() in {slug.lower() for slug in owner_form_slugs}
+
+
+def _send_owner_email_alert(subject, message_body):
+    owner_emails = getattr(settings, 'OWNER_NOTIFICATION_EMAILS', [])
+    recipients = sorted({email.strip() for email in owner_emails if email.strip()})
+    if not recipients:
+        return
+
+    owner_email = EmailMessage(
+        subject=f"[Owner Alert] {subject}",
+        body=message_body,
+        from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@xfedtax.com'),
+        to=recipients,
+    )
+    owner_email.send()
+
+
+def _send_owner_sms_alert(form, submission, form_data, uploaded_files):
+    if not getattr(settings, 'ENABLE_SMS_NOTIFICATIONS', False):
+        return
+
+    account_sid = getattr(settings, 'TWILIO_ACCOUNT_SID', '').strip()
+    auth_token = getattr(settings, 'TWILIO_AUTH_TOKEN', '').strip()
+    from_number = getattr(settings, 'TWILIO_FROM_NUMBER', '').strip()
+    owner_phones = sorted(
+        {phone.strip() for phone in getattr(settings, 'OWNER_NOTIFICATION_PHONES', []) if phone.strip()}
+    )
+
+    if not (account_sid and auth_token and from_number and owner_phones):
+        logger.warning("SMS owner notifications skipped due to incomplete Twilio/phone settings.")
+        return
+
+    client_identifier = _extract_client_identifier(form_data)
+    file_count = len(uploaded_files)
+    message = (
+        f"HireXFed alert: New {form.title} submission "
+        f"(ID {submission.id}) from {client_identifier}. Files: {file_count}."
+    )
+
+    for phone_number in owner_phones:
+        _send_twilio_sms(
+            account_sid=account_sid,
+            auth_token=auth_token,
+            from_number=from_number,
+            to_number=phone_number,
+            body=message,
+        )
+
+
+def _extract_client_identifier(form_data):
+    preferred_keys = (
+        'Email Address',
+        'email',
+        'First Name',
+    )
+    for key in preferred_keys:
+        value = (form_data.get(key) or '').strip()
+        if value:
+            return value
+    return "unknown sender"
+
+
+def _send_twilio_sms(account_sid, auth_token, from_number, to_number, body):
+    endpoint = f"https://api.twilio.com/2010-04-01/Accounts/{account_sid}/Messages.json"
+    payload = urlencode({
+        "From": from_number,
+        "To": to_number,
+        "Body": body,
+    }).encode("utf-8")
+
+    request = Request(endpoint, data=payload, method="POST")
+    auth_bytes = f"{account_sid}:{auth_token}".encode("utf-8")
+    auth_header = base64.b64encode(auth_bytes).decode("ascii")
+    request.add_header("Authorization", f"Basic {auth_header}")
+    request.add_header("Content-Type", "application/x-www-form-urlencoded")
+
+    try:
+        with urlopen(request, timeout=10):
+            return
+    except (HTTPError, URLError) as exc:
+        logger.exception("Failed to send SMS notification to %s: %s", to_number, str(exc))
 
 
 # Admin helper views

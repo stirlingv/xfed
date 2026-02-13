@@ -2,6 +2,7 @@ import io
 import shutil
 import tempfile
 import zipfile
+from unittest.mock import MagicMock, patch
 
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -18,6 +19,7 @@ from .validators import (
     normalize_and_validate_submission_email,
     validate_resume_upload,
 )
+from .views import send_intake_notification
 
 
 class SubmissionValidationTests(TestCase):
@@ -83,6 +85,103 @@ class SubmissionValidationTests(TestCase):
     def test_rejects_placeholder_email_local_part(self):
         with self.assertRaises(ValidationError):
             normalize_and_validate_submission_email("test@realcompany.com")
+
+
+class OwnerNotificationTests(TestCase):
+    def _build_submission_payload(self, form_slug, form_title):
+        form = IntakeForm.objects.create(
+            title=form_title,
+            slug=form_slug,
+            email_recipients="ops@examplebusiness.com",
+            allow_file_uploads=True,
+        )
+        submission = IntakeSubmission.objects.create(
+            form=form,
+            data={"Email Address": "candidate@examplebusiness.com"},
+            ip_address="127.0.0.1",
+        )
+        form_data = {
+            "Email Address": "candidate@examplebusiness.com",
+            "First Name": "Alex",
+        }
+        return form, submission, form_data, []
+
+    @override_settings(
+        OWNER_NOTIFICATION_FORM_SLUGS=["join-our-team", "client-consultation"],
+        OWNER_NOTIFICATION_EMAILS=["owner1@examplebusiness.com", "owner2@examplebusiness.com"],
+        ENABLE_SMS_NOTIFICATIONS=False,
+    )
+    @patch("main.views.EmailMessage")
+    def test_target_forms_send_owner_alert_email(self, email_message_cls):
+        regular_email = MagicMock()
+        owner_email = MagicMock()
+        email_message_cls.side_effect = [regular_email, owner_email]
+
+        payload = self._build_submission_payload("join-our-team", "Join Our Team")
+        send_intake_notification(*payload)
+
+        self.assertEqual(email_message_cls.call_count, 2)
+        first_call_kwargs = email_message_cls.call_args_list[0].kwargs
+        second_call_kwargs = email_message_cls.call_args_list[1].kwargs
+
+        self.assertEqual(first_call_kwargs["to"], ["ops@examplebusiness.com"])
+        self.assertEqual(
+            second_call_kwargs["to"],
+            ["owner1@examplebusiness.com", "owner2@examplebusiness.com"],
+        )
+        self.assertTrue(second_call_kwargs["subject"].startswith("[Owner Alert] "))
+        regular_email.send.assert_called_once()
+        owner_email.send.assert_called_once()
+
+    @override_settings(
+        OWNER_NOTIFICATION_FORM_SLUGS=["join-our-team", "client-consultation"],
+        OWNER_NOTIFICATION_EMAILS=["owner1@examplebusiness.com"],
+        ENABLE_SMS_NOTIFICATIONS=False,
+    )
+    @patch("main.views.EmailMessage")
+    def test_non_target_forms_do_not_send_owner_alert_email(self, email_message_cls):
+        regular_email = MagicMock()
+        email_message_cls.return_value = regular_email
+
+        payload = self._build_submission_payload("general-intake", "General Intake")
+        send_intake_notification(*payload)
+
+        self.assertEqual(email_message_cls.call_count, 1)
+        first_call_kwargs = email_message_cls.call_args_list[0].kwargs
+        self.assertEqual(first_call_kwargs["to"], ["ops@examplebusiness.com"])
+        regular_email.send.assert_called_once()
+
+    @override_settings(
+        OWNER_NOTIFICATION_FORM_SLUGS=["join-our-team", "client-consultation"],
+        OWNER_NOTIFICATION_PHONES=["+15551230001", "+15551230002"],
+        ENABLE_SMS_NOTIFICATIONS=True,
+        TWILIO_ACCOUNT_SID="sid",
+        TWILIO_AUTH_TOKEN="token",
+        TWILIO_FROM_NUMBER="+15550001111",
+    )
+    @patch("main.views._send_twilio_sms")
+    @patch("main.views.EmailMessage")
+    def test_target_forms_send_sms_to_all_owner_numbers(
+        self, email_message_cls, send_twilio_sms
+    ):
+        regular_email = MagicMock()
+        email_message_cls.return_value = regular_email
+
+        payload = self._build_submission_payload(
+            "client-consultation",
+            "Request a Free Consultation",
+        )
+        send_intake_notification(*payload)
+
+        self.assertEqual(send_twilio_sms.call_count, 2)
+        all_calls = [call.kwargs for call in send_twilio_sms.call_args_list]
+        self.assertEqual(
+            {call["to_number"] for call in all_calls},
+            {"+15551230001", "+15551230002"},
+        )
+        self.assertTrue(
+            all("Request a Free Consultation" in call["body"] for call in all_calls)
+        )
 
 
 class IntakeFileAdminPreviewTests(TestCase):

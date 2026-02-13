@@ -27,6 +27,16 @@ def _env_bool(name, default=False):
     return os.environ.get(name, str(default)).lower() in ['true', '1', 'yes']
 
 
+def _env_list(name, default=''):
+    raw_value = os.environ.get(name, default)
+    values = []
+    for chunk in (raw_value or '').replace('\n', ',').split(','):
+        cleaned = chunk.strip()
+        if cleaned:
+            values.append(cleaned)
+    return values
+
+
 # Toggle S3-backed media storage. Keep disabled by default for local development.
 USE_S3_FOR_MEDIA = _env_bool('USE_S3_FOR_MEDIA', False)
 
@@ -239,6 +249,20 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'HireXFed <noreply@hirexfed.com>')
+
+# Owner alerts for high-priority intake submissions
+OWNER_NOTIFICATION_FORM_SLUGS = [
+    slug.lower() for slug in _env_list(
+        'OWNER_NOTIFICATION_FORM_SLUGS',
+        'join-our-team,client-consultation',
+    )
+]
+OWNER_NOTIFICATION_EMAILS = _env_list('OWNER_NOTIFICATION_EMAILS', '')
+OWNER_NOTIFICATION_PHONES = _env_list('OWNER_NOTIFICATION_PHONES', '')
+ENABLE_SMS_NOTIFICATIONS = _env_bool('ENABLE_SMS_NOTIFICATIONS', False)
+TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID', '')
+TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN', '')
+TWILIO_FROM_NUMBER = os.environ.get('TWILIO_FROM_NUMBER', '')
 
 # For development, use console backend if no email configured
 if DEBUG and not EMAIL_HOST_USER:
