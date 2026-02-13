@@ -6,6 +6,8 @@ import zipfile
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.contrib.auth import get_user_model
+from django.core.management import call_command
+from django.core.management.base import CommandError
 from django.test import TestCase
 from django.test.utils import override_settings
 from django.urls import reverse
@@ -204,3 +206,50 @@ class IntakeFileCleanupTests(TestCase):
 
         self.assertFalse(first_storage.exists(first_name))
         self.assertFalse(second_storage.exists(second_name))
+
+
+class SetupHireXfedContentCommandTests(TestCase):
+    def test_default_mode_preserves_existing_submissions(self):
+        form = IntakeForm.objects.create(
+            title="Existing Consultation",
+            slug="client-consultation",
+            email_recipients="team@examplebusiness.com",
+            allow_file_uploads=True,
+        )
+        submission = IntakeSubmission.objects.create(
+            form=form,
+            data={"Email Address": "persist@examplebusiness.com"},
+        )
+
+        original_form_id = form.id
+        original_submission_id = submission.id
+
+        call_command("setup_hirexfed_content")
+
+        self.assertTrue(IntakeSubmission.objects.filter(pk=original_submission_id).exists())
+        self.assertEqual(IntakeSubmission.objects.count(), 1)
+        self.assertEqual(
+            IntakeForm.objects.get(slug="client-consultation").id,
+            original_form_id,
+        )
+
+    def test_reset_mode_replaces_forms_and_cascades_submissions(self):
+        form = IntakeForm.objects.create(
+            title="Existing Consultation",
+            slug="client-consultation",
+            email_recipients="team@examplebusiness.com",
+            allow_file_uploads=True,
+        )
+        IntakeSubmission.objects.create(
+            form=form,
+            data={"Email Address": "to-be-removed@examplebusiness.com"},
+        )
+
+        self.assertEqual(IntakeSubmission.objects.count(), 1)
+        call_command("setup_hirexfed_content", reset=True, force=True)
+        self.assertEqual(IntakeSubmission.objects.count(), 0)
+
+    @override_settings(DEBUG=False)
+    def test_reset_requires_force_when_debug_false(self):
+        with self.assertRaises(CommandError):
+            call_command("setup_hirexfed_content", reset=True)

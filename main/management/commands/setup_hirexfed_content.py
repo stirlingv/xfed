@@ -2,7 +2,8 @@
 Management command to set up initial HireXFed content.
 Run with: python manage.py setup_hirexfed_content
 """
-from django.core.management.base import BaseCommand
+from django.conf import settings
+from django.core.management.base import BaseCommand, CommandError
 from main.models import (
     Banner, Feature, Post, MiniPost, ContactInfo, Footer,
     IntakeForm, IntakeField, DynamicPage, PageContent,
@@ -13,8 +14,39 @@ from main.models import (
 class Command(BaseCommand):
     help = 'Set up initial HireXFed website content'
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--reset',
+            action='store_true',
+            help='Destructive reset: replace existing seeded content. Can delete intake submissions.',
+        )
+        parser.add_argument(
+            '--force',
+            action='store_true',
+            help='Required with --reset when DEBUG=False (production safety guard).',
+        )
+
     def handle(self, *args, **options):
-        self.stdout.write('Setting up HireXFed content...\n')
+        self.reset = options['reset']
+        force = options['force']
+
+        if self.reset and not settings.DEBUG and not force:
+            raise CommandError(
+                "Refusing destructive reset in production. Re-run with --reset --force if intentional."
+            )
+
+        mode = "RESET (destructive)" if self.reset else "SAFE (non-destructive)"
+        self.stdout.write(f'Setting up HireXFed content in {mode} mode...\n')
+
+        if self.reset:
+            self.stdout.write(self.style.WARNING(
+                '⚠️  Destructive mode enabled: existing seeded content will be replaced.'
+            ))
+
+        else:
+            self.stdout.write(
+                'Non-destructive mode preserves existing intake forms and submissions.'
+            )
 
         self.setup_banner()
         self.setup_features()
@@ -35,27 +67,105 @@ class Command(BaseCommand):
         self.stdout.write('4. Add real images to posts')
         self.stdout.write('5. Customize as needed\n')
 
+    def _upsert_singleton(self, model, defaults):
+        if self.reset:
+            model.objects.all().delete()
+            return model.objects.create(**defaults)
+
+        instance = model.objects.order_by('pk').first()
+        if not instance:
+            return model.objects.create(**defaults)
+
+        for field, value in defaults.items():
+            setattr(instance, field, value)
+        instance.save(update_fields=list(defaults.keys()))
+        return instance
+
+    def _upsert_by(self, model, lookup, defaults):
+        qs = model.objects.filter(**lookup).order_by('pk')
+        instance = qs.first()
+        if not instance:
+            return model.objects.create(**lookup, **defaults)
+
+        if defaults:
+            for field, value in defaults.items():
+                setattr(instance, field, value)
+            instance.save(update_fields=list(defaults.keys()))
+
+        if self.reset:
+            qs.exclude(pk=instance.pk).delete()
+
+        return instance
+
+    def _upsert_page_content(self, **kwargs):
+        page = kwargs['page']
+        if self.reset:
+            PageContent.objects.filter(page=page).delete()
+            return PageContent.objects.create(**kwargs)
+
+        lookup = {
+            'page': kwargs['page'],
+            'section_type': kwargs['section_type'],
+            'order': kwargs['order'],
+        }
+        defaults = {
+            'title': kwargs['title'],
+            'content': kwargs['content'],
+            'is_active': kwargs['is_active'],
+        }
+        return self._upsert_by(PageContent, lookup, defaults)
+
+    def _upsert_intake_form(self, slug, defaults, fields):
+        if self.reset:
+            IntakeForm.objects.filter(slug=slug).delete()
+            form = IntakeForm.objects.create(slug=slug, **defaults)
+        else:
+            form = self._upsert_by(IntakeForm, {'slug': slug}, defaults)
+
+        keep_field_names = []
+        for field_data in fields:
+            keep_field_names.append(field_data['field_name'])
+            field_defaults = field_data.copy()
+            field_name = field_defaults.pop('field_name')
+            self._upsert_by(
+                IntakeField,
+                {'form': form, 'field_name': field_name},
+                field_defaults,
+            )
+
+        if self.reset:
+            form.fields.exclude(field_name__in=keep_field_names).delete()
+
+        return form
+
+    def _upsert_navigation_item(self, title, url, order, parent=None, is_active=True):
+        return self._upsert_by(
+            NavigationItem,
+            {'title': title, 'parent': parent},
+            {'url': url, 'order': order, 'is_active': is_active},
+        )
+
     def setup_banner(self):
         """Set up the homepage banner"""
         self.stdout.write('  → Setting up banner...')
 
-        Banner.objects.all().delete()
-        Banner.objects.create(
-            heading="Former Federal Experts Ready to Help You!",
-            subheading="HireXFed connects you with seasoned federal professionals",
-            description1="Whether you need help with taxes, Social Security, data systems, or IT—our network of former federal employees has the insider knowledge to solve your problems efficiently.",
-            description2="With centuries of combined federal experience, our experts understand how government agencies work from the inside—and they'll put that knowledge to work for you.",
-            description3="<strong>Get expert help today.</strong> Select a service category below or fill out our quick consultation form.",
-            button_text="Request a Consultation",
-            button_link="/intake/client-consultation/"
-        )
+        self._upsert_singleton(Banner, {
+            'heading': "Former Federal Experts Ready to Help You!",
+            'subheading': "HireXFed connects you with seasoned federal professionals",
+            'description1': "Whether you need help with taxes, Social Security, data systems, or IT—our network of former federal employees has the insider knowledge to solve your problems efficiently.",
+            'description2': "With centuries of combined federal experience, our experts understand how government agencies work from the inside—and they'll put that knowledge to work for you.",
+            'description3': "<strong>Get expert help today.</strong> Select a service category below or fill out our quick consultation form.",
+            'button_text': "Request a Consultation",
+            'button_link': "/intake/client-consultation/"
+        })
         self.stdout.write(self.style.SUCCESS(' Done'))
 
     def setup_features(self):
         """Set up the service categories section (formerly 'More About Us')"""
         self.stdout.write('  → Setting up features...')
 
-        Feature.objects.all().delete()
+        if self.reset:
+            Feature.objects.all().delete()
 
         features = [
             {
@@ -80,11 +190,14 @@ class Command(BaseCommand):
             },
         ]
 
-        for i, feature in enumerate(features):
-            Feature.objects.create(
-                icon=feature['icon'],
-                title=feature['title'],
-                description=feature['description']
+        for feature in features:
+            self._upsert_by(
+                Feature,
+                {'title': feature['title']},
+                {
+                    'icon': feature['icon'],
+                    'description': feature['description'],
+                },
             )
         self.stdout.write(self.style.SUCCESS(' Done'))
 
@@ -92,7 +205,8 @@ class Command(BaseCommand):
         """Set up the 'Tax Resources & Insights' posts section"""
         self.stdout.write('  → Setting up posts...')
 
-        Post.objects.all().delete()
+        if self.reset:
+            Post.objects.all().delete()
 
         posts = [
             {
@@ -134,7 +248,11 @@ class Command(BaseCommand):
         ]
 
         for post_data in posts:
-            Post.objects.create(**post_data)
+            self._upsert_by(Post, {'title': post_data['title']}, {
+                'description': post_data['description'],
+                'button_text': post_data['button_text'],
+                'button_link': post_data['button_link'],
+            })
 
         self.stdout.write(self.style.SUCCESS(' Done'))
 
@@ -142,7 +260,8 @@ class Command(BaseCommand):
         """Set up sidebar mini posts / recent updates"""
         self.stdout.write('  → Setting up mini posts...')
 
-        MiniPost.objects.all().delete()
+        if self.reset:
+            MiniPost.objects.all().delete()
 
         mini_posts = [
             {
@@ -157,7 +276,11 @@ class Command(BaseCommand):
         ]
 
         for mini_post_data in mini_posts:
-            MiniPost.objects.create(**mini_post_data)
+            self._upsert_by(
+                MiniPost,
+                {'description': mini_post_data['description']},
+                {},
+            )
 
         self.stdout.write(self.style.SUCCESS(' Done'))
 
@@ -165,12 +288,11 @@ class Command(BaseCommand):
         """Set up contact information"""
         self.stdout.write('  → Setting up contact info...')
 
-        ContactInfo.objects.all().delete()
-        ContactInfo.objects.create(
-            email='help@hirexfed.com',
-            phone='',  # No phone - use Request a Callback instead
-            address='Serving clients nationwide\nRemote consultations available'
-        )
+        self._upsert_singleton(ContactInfo, {
+            'email': 'help@hirexfed.com',
+            'phone': '',  # No phone - use Request a Callback instead
+            'address': 'Serving clients nationwide\nRemote consultations available'
+        })
 
         self.stdout.write(self.style.SUCCESS(' Done'))
 
@@ -178,29 +300,15 @@ class Command(BaseCommand):
         """Set up footer"""
         self.stdout.write('  → Setting up footer...')
 
-        Footer.objects.all().delete()
-        Footer.objects.create(
-            copyright='© 2025 HireXFed. All rights reserved. Former federal expertise, working for you.'
-        )
+        self._upsert_singleton(Footer, {
+            'copyright': '© 2025 HireXFed. All rights reserved. Former federal expertise, working for you.'
+        })
 
         self.stdout.write(self.style.SUCCESS(' Done'))
 
     def setup_client_intake_form(self):
         """Set up the client consultation intake form"""
         self.stdout.write('  → Setting up client intake form...')
-
-        # Delete existing form if it exists
-        IntakeForm.objects.filter(slug='client-consultation').delete()
-
-        form = IntakeForm.objects.create(
-            title='Request a Free Consultation',
-            slug='client-consultation',
-            description='Tell us about your tax situation and one of our former IRS experts will contact you within 24 hours. All information is kept strictly confidential.',
-            success_message='Thank you for your inquiry! One of our tax experts will contact you within 24 hours to discuss your situation.',
-            email_recipients='admin@hirexfed.com',
-            is_active=True,
-            allow_file_uploads=True
-        )
 
         # Create form fields
         fields = [
@@ -295,27 +403,24 @@ class Command(BaseCommand):
             },
         ]
 
-        for field_data in fields:
-            IntakeField.objects.create(form=form, **field_data)
+        self._upsert_intake_form(
+            slug='client-consultation',
+            defaults={
+                'title': 'Request a Free Consultation',
+                'description': 'Tell us about your tax situation and one of our former IRS experts will contact you within 24 hours. All information is kept strictly confidential.',
+                'success_message': 'Thank you for your inquiry! One of our tax experts will contact you within 24 hours to discuss your situation.',
+                'email_recipients': 'admin@hirexfed.com',
+                'is_active': True,
+                'allow_file_uploads': True,
+            },
+            fields=fields,
+        )
 
         self.stdout.write(self.style.SUCCESS(' Done'))
 
     def setup_sme_intake_form(self):
         """Set up the SME (Subject Matter Expert) application form"""
         self.stdout.write('  → Setting up SME application form...')
-
-        # Delete existing form if it exists
-        IntakeForm.objects.filter(slug='join-our-team').delete()
-
-        form = IntakeForm.objects.create(
-            title='Join Our Expert Network',
-            slug='join-our-team',
-            description='Are you a former federal employee with tax expertise? Join HireXFed\'s network of Subject Matter Experts and help clients while earning competitive compensation. Our SMEs typically earn 75-80% of client fees.',
-            success_message='Thank you for your interest in joining HireXFed! Our team will review your application and contact you within 3-5 business days to discuss next steps.',
-            email_recipients='admin@hirexfed.com',
-            is_active=True,
-            allow_file_uploads=True
-        )
 
         # Create form fields
         fields = [
@@ -458,8 +563,18 @@ class Command(BaseCommand):
             },
         ]
 
-        for field_data in fields:
-            IntakeField.objects.create(form=form, **field_data)
+        self._upsert_intake_form(
+            slug='join-our-team',
+            defaults={
+                'title': 'Join Our Expert Network',
+                'description': 'Are you a former federal employee with tax expertise? Join HireXFed\'s network of Subject Matter Experts and help clients while earning competitive compensation. Our SMEs typically earn 75-80% of client fees.',
+                'success_message': 'Thank you for your interest in joining HireXFed! Our team will review your application and contact you within 3-5 business days to discuss next steps.',
+                'email_recipients': 'admin@hirexfed.com',
+                'is_active': True,
+                'allow_file_uploads': True,
+            },
+            fields=fields,
+        )
 
         self.stdout.write(self.style.SUCCESS(' Done'))
 
@@ -479,8 +594,7 @@ class Command(BaseCommand):
             }
         )
 
-        PageContent.objects.filter(page='about').delete()
-        PageContent.objects.create(
+        self._upsert_page_content(
             page='about',
             section_type='main_content',
             title='Who We Are',
@@ -529,8 +643,7 @@ class Command(BaseCommand):
             }
         )
 
-        PageContent.objects.filter(page='tax-solutions').delete()
-        PageContent.objects.create(
+        self._upsert_page_content(
             page='tax-solutions',
             section_type='main_content',
             title='Former IRS Experts Solving Your Tax Problems',
@@ -578,8 +691,7 @@ class Command(BaseCommand):
             }
         )
 
-        PageContent.objects.filter(page='tax-solutions/services').delete()
-        PageContent.objects.create(
+        self._upsert_page_content(
             page='tax-solutions/services',
             section_type='main_content',
             title='Available Services',
@@ -686,8 +798,7 @@ class Command(BaseCommand):
             }
         )
 
-        PageContent.objects.filter(page='members').delete()
-        PageContent.objects.create(
+        self._upsert_page_content(
             page='members',
             section_type='main_content',
             title='Individually We Are Valuable. Collectively, We Are Unstoppable!',
@@ -763,8 +874,7 @@ class Command(BaseCommand):
             }
         )
 
-        PageContent.objects.filter(page='members/tax-solutions').delete()
-        PageContent.objects.create(
+        self._upsert_page_content(
             page='members/tax-solutions',
             section_type='main_content',
             title='Join America\'s Largest Network of Ex-IRS Examiners',
@@ -819,8 +929,7 @@ class Command(BaseCommand):
             }
         )
 
-        PageContent.objects.filter(page='members/faq').delete()
-        PageContent.objects.create(
+        self._upsert_page_content(
             page='members/faq',
             section_type='main_content',
             title='Member Frequently Asked Questions',
@@ -888,8 +997,7 @@ class Command(BaseCommand):
                 }
             )
 
-            PageContent.objects.filter(page=slug).delete()
-            PageContent.objects.create(
+            self._upsert_page_content(
                 page=slug,
                 section_type='main_content',
                 title='Coming Soon',
@@ -920,8 +1028,7 @@ class Command(BaseCommand):
             }
         )
 
-        PageContent.objects.filter(page='services').delete()
-        PageContent.objects.create(
+        self._upsert_page_content(
             page='services',
             section_type='main_content',
             title='How Can We Help You?',
@@ -971,8 +1078,7 @@ class Command(BaseCommand):
             }
         )
 
-        PageContent.objects.filter(page='how-it-works').delete()
-        PageContent.objects.create(
+        self._upsert_page_content(
             page='how-it-works',
             section_type='main_content',
             title='Simple Process, Expert Results',
@@ -1020,8 +1126,8 @@ class Command(BaseCommand):
         """Set up navigation menu"""
         self.stdout.write('  → Setting up navigation...')
 
-        # Clear existing navigation
-        NavigationItem.objects.all().delete()
+        if self.reset:
+            NavigationItem.objects.all().delete()
 
         # Turn off show_in_navigation for all dynamic pages
         DynamicPage.objects.update(show_in_navigation=False)
@@ -1036,34 +1142,42 @@ class Command(BaseCommand):
         ]
 
         for item in nav_items:
-            NavigationItem.objects.create(**item, is_active=True)
+            self._upsert_navigation_item(
+                title=item['title'],
+                url=item['url'],
+                order=item['order'],
+                parent=None,
+                is_active=True,
+            )
 
-        tax_solutions = NavigationItem.objects.create(
+        tax_solutions = self._upsert_navigation_item(
             title='Tax Solutions',
             url='/tax-solutions/',
             order=30,
-            is_active=True
+            parent=None,
+            is_active=True,
         )
-        NavigationItem.objects.create(
+        self._upsert_navigation_item(
             title='Tax Services & Pricing',
             url='/tax-solutions/services/',
             parent=tax_solutions,
             order=10,
-            is_active=True
+            is_active=True,
         )
 
-        join_network = NavigationItem.objects.create(
+        join_network = self._upsert_navigation_item(
             title='Join the Network',
             url='/intake/join-our-team/',
             order=60,
-            is_active=True
+            parent=None,
+            is_active=True,
         )
-        NavigationItem.objects.create(
+        self._upsert_navigation_item(
             title='Member FAQ',
             url='/members/faq/',
             parent=join_network,
             order=10,
-            is_active=True
+            is_active=True,
         )
 
         self.stdout.write(self.style.SUCCESS(' Done'))
