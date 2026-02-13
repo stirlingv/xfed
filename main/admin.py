@@ -1,4 +1,12 @@
+import mimetypes
+from pathlib import Path
+from urllib.parse import quote
+
 from django.contrib import admin
+from django.core.exceptions import PermissionDenied
+from django.http import FileResponse
+from django.shortcuts import get_object_or_404
+from django.urls import path, reverse
 from django.utils.html import format_html
 from .models import (Banner, Feature, Post, MiniPost, ContactInfo, Footer,
                     GenericPageSection, PageContent, DynamicPage,
@@ -344,8 +352,21 @@ class IntakeFieldAdmin(admin.ModelAdmin):
 class IntakeFileInline(admin.TabularInline):
     model = IntakeFile
     extra = 0
-    readonly_fields = ('original_filename', 'uploaded_at')
-    fields = ('file', 'original_filename', 'uploaded_at')
+    readonly_fields = ('preview_link', 'original_filename', 'uploaded_at')
+    fields = ('preview_link', 'file', 'original_filename', 'uploaded_at')
+
+    def preview_link(self, obj):
+        if not obj.pk or not obj.file:
+            return "-"
+        preview_url = reverse(
+            'admin:main_intakesubmission_file_preview',
+            args=[obj.submission_id, obj.pk],
+        )
+        return format_html(
+            '<a href="{}" target="_blank" rel="noopener">Preview</a>',
+            preview_url
+        )
+    preview_link.short_description = "Preview"
 
 @admin.register(IntakeSubmission)
 class IntakeSubmissionAdmin(admin.ModelAdmin):
@@ -398,6 +419,31 @@ class IntakeSubmissionAdmin(admin.ModelAdmin):
 
     # Custom admin actions
     actions = ['mark_as_contacted', 'mark_as_scheduled', 'mark_as_completed', 'assign_to_me']
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                '<int:submission_id>/file/<int:file_id>/preview/',
+                self.admin_site.admin_view(self.preview_uploaded_file),
+                name='main_intakesubmission_file_preview',
+            ),
+        ]
+        return custom_urls + urls
+
+    def preview_uploaded_file(self, request, submission_id, file_id):
+        submission = get_object_or_404(IntakeSubmission, pk=submission_id)
+        if not self.has_view_or_change_permission(request, submission):
+            raise PermissionDenied
+
+        intake_file = get_object_or_404(IntakeFile, pk=file_id, submission=submission)
+        storage_file = intake_file.file.open('rb')
+        filename = Path(intake_file.original_filename or intake_file.file.name).name
+        content_type = mimetypes.guess_type(filename)[0] or "application/octet-stream"
+
+        response = FileResponse(storage_file, content_type=content_type)
+        response["Content-Disposition"] = f"inline; filename*=UTF-8''{quote(filename)}"
+        return response
 
     def get_client_name(self, obj):
         """Display client name"""

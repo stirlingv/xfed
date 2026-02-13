@@ -1,10 +1,17 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from django.templatetags.static import static
 from django.contrib import messages
 from django.core.mail import EmailMessage
+from django.core.exceptions import ValidationError
 from django.conf import settings
-import json
 from .models import Banner, Feature, Post, PageContent, DynamicPage, IntakeForm, IntakeSubmission, IntakeFile
+from .validators import (
+    ALLOWED_RESUME_EXTENSIONS_DISPLAY,
+    MAX_FILES_PER_SUBMISSION,
+    MAX_RESUME_FILE_SIZE_MB,
+    RESUME_FILE_ACCEPT_ATTRIBUTE,
+    normalize_and_validate_submission_email,
+    validate_resume_upload,
+)
 
 def index(request):
     """Homepage view with banner and features"""
@@ -134,6 +141,9 @@ def intake_form_view(request, slug):
         'form': form,
         'form_fields': form_fields,
         'has_file_fields': has_file_fields,
+        'allowed_resume_extensions': ALLOWED_RESUME_EXTENSIONS_DISPLAY,
+        'resume_max_file_size_mb': MAX_RESUME_FILE_SIZE_MB,
+        'resume_file_accept_attribute': RESUME_FILE_ACCEPT_ATTRIBUTE,
     }
 
     return render(request, 'intake.html', context)
@@ -143,44 +153,42 @@ def handle_intake_submission(request, form):
     try:
         # Collect form data
         form_data = {}
-        files_uploaded = []
-
-
-        # Process configured form fields and collect email for validation
         email_value = None
-        email_field_name = None
-        for field in form.fields.all():
-            field_value = request.POST.get(field.field_name)
-            if field.field_type == 'email':
-                email_value = field_value
-                email_field_name = field.field_name
+        email_field_label = None
+        configured_fields = list(form.fields.all())
+
+        # Process non-file fields first.
+        for field in configured_fields:
+            if field.field_type == 'file':
+                continue
+
+            if field.field_type == 'checkbox':
+                field_value = 'yes' if request.POST.get(field.field_name) else ''
+            else:
+                field_value = (request.POST.get(field.field_name) or '').strip()
+
             if field_value:
-                form_data[field.label] = field_value
+                if field.field_type == 'email':
+                    try:
+                        normalized_email = normalize_and_validate_submission_email(field_value)
+                    except ValidationError as exc:
+                        messages.error(request, exc.messages[0])
+                        return redirect('intake_form', slug=form.slug)
+                    email_value = normalized_email
+                    email_field_label = field.label
+                    form_data[field.label] = normalized_email
+                else:
+                    form_data[field.label] = field_value
             elif field.is_required:
                 messages.error(request, f"{field.label} is required.")
                 return redirect('intake_form', slug=form.slug)
 
-        # Email format validation
-        from django.core.validators import validate_email
-        from django.core.exceptions import ValidationError
-        if email_value:
-            try:
-                validate_email(email_value)
-            except ValidationError:
-                messages.error(request, "Please enter a valid email address.")
-                return redirect('intake_form', slug=form.slug)
-        else:
+        if not email_value:
             messages.error(request, "Email address is required.")
             return redirect('intake_form', slug=form.slug)
 
         # Prevent duplicate submissions per email per form
-        # IntakeSubmission stores data as JSON, so we need to search for submissions with the same form and email
-        from django.db.models import Q
-        duplicate = IntakeSubmission.objects.filter(
-            form=form,
-            data__icontains=email_value
-        ).exists()
-        if duplicate:
+        if _submission_exists_for_email(form, email_value, email_field_label):
             messages.error(request, "A submission with this email address has already been received for this form. Please contact us if you need to update your information.")
             return redirect('intake_form', slug=form.slug)
 
@@ -188,16 +196,34 @@ def handle_intake_submission(request, form):
         uploaded_files = []
 
         # Handle configured file fields
-        for field in form.fields.filter(field_type='file'):
-            files = request.FILES.getlist(field.field_name)
+        for field in [f for f in configured_fields if f.field_type == 'file']:
+            files = [uploaded for uploaded in request.FILES.getlist(field.field_name) if uploaded]
+            if field.is_required and not files:
+                messages.error(request, f"{field.label} is required.")
+                return redirect('intake_form', slug=form.slug)
             for uploaded_file in files:
                 uploaded_files.append((uploaded_file, field.label))
 
         # Handle default document uploads if form allows uploads
         if form.allow_file_uploads and 'documents' in request.FILES:
-            files = request.FILES.getlist('documents')
+            files = [uploaded for uploaded in request.FILES.getlist('documents') if uploaded]
             for uploaded_file in files:
                 uploaded_files.append((uploaded_file, 'Documents'))
+
+        if len(uploaded_files) > MAX_FILES_PER_SUBMISSION:
+            messages.error(
+                request,
+                f"You can upload up to {MAX_FILES_PER_SUBMISSION} files per submission.",
+            )
+            return redirect('intake_form', slug=form.slug)
+
+        # Enforce resume-safe file types and file size on the server.
+        for uploaded_file, _field_label in uploaded_files:
+            try:
+                validate_resume_upload(uploaded_file)
+            except ValidationError as exc:
+                messages.error(request, exc.messages[0])
+                return redirect('intake_form', slug=form.slug)
 
         # Create submission record
         submission = IntakeSubmission.objects.create(
@@ -223,6 +249,31 @@ def handle_intake_submission(request, form):
     except Exception as e:
         messages.error(request, f"There was an error processing your submission: {str(e)}")
         return redirect('intake_form', slug=form.slug)
+
+
+def _submission_exists_for_email(form, email_value, email_field_label):
+    """Check duplicate submissions using an exact, case-insensitive email match."""
+    normalized_email = email_value.strip().lower()
+    existing_data = IntakeSubmission.objects.filter(form=form).values_list('data', flat=True)
+    for data in existing_data:
+        if not isinstance(data, dict):
+            continue
+
+        existing_email = ''
+        if email_field_label:
+            existing_email = (data.get(email_field_label) or '').strip().lower()
+
+        if not existing_email:
+            existing_email = (
+                data.get('Email Address')
+                or data.get('email')
+                or ''
+            ).strip().lower()
+
+        if existing_email == normalized_email:
+            return True
+
+    return False
 
 def get_client_ip(request):
     """Get the client's IP address"""
@@ -275,8 +326,13 @@ def send_intake_notification(form, submission, form_data, uploaded_files):
             )
 
             # Attach files if any
-            for uploaded_file, field_label in uploaded_files:
-                email.attach(uploaded_file.name, uploaded_file.read(), uploaded_file.content_type)
+            for uploaded_file, _field_label in uploaded_files:
+                uploaded_file.seek(0)
+                email.attach(
+                    uploaded_file.name,
+                    uploaded_file.read(),
+                    uploaded_file.content_type or "application/octet-stream",
+                )
 
             email.send()
 

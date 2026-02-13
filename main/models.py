@@ -1,4 +1,5 @@
 from django.db import models
+from .validators import validate_resume_upload
 
 class Banner(models.Model):
     heading = models.CharField(
@@ -549,6 +550,10 @@ class IntakeFile(models.Model):
         ordering = ['-uploaded_at']
         verbose_name = "Uploaded File"
         verbose_name_plural = "Uploaded Files"
+
+    def clean(self):
+        if self.file:
+            validate_resume_upload(self.file)
 
     def __str__(self):
         return f"{self.original_filename} - {self.submission}"

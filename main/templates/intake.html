@@ -118,9 +118,20 @@
                                 <label for="{{ field.field_name }}">
                                     {{ field.label }}{% if field.is_required %} *{% endif %}
                                 </label>
-                                <input type="file" name="{{ field.field_name }}" id="{{ field.field_name }}" {% if field.is_required %}required{% endif %} multiple>
+                                <input
+                                    type="file"
+                                    name="{{ field.field_name }}"
+                                    id="{{ field.field_name }}"
+                                    accept="{{ resume_file_accept_attribute }}"
+                                    {% if field.is_required %}required{% endif %}
+                                    multiple
+                                >
                                 {% if field.help_text %}
                                     <p style="font-size: 0.8em; color: #666; margin-top: 0.25em;">{{ field.help_text }}</p>
+                                {% else %}
+                                    <p style="font-size: 0.8em; color: #666; margin-top: 0.25em;">
+                                        Accepted formats: {{ allowed_resume_extensions }} (Max {{ resume_max_file_size_mb }}MB per file)
+                                    </p>
                                 {% endif %}
                             </div>
                         {% endif %}
@@ -131,9 +142,15 @@
                     {% if form.allow_file_uploads and not has_file_fields %}
                         <div class="col-12">
                             <label for="documents">Upload Documents (Optional)</label>
-                            <input type="file" name="documents" id="documents" multiple>
+                            <input
+                                type="file"
+                                name="documents"
+                                id="documents"
+                                accept="{{ resume_file_accept_attribute }}"
+                                multiple
+                            >
                             <p style="font-size: 0.8em; color: #666; margin-top: 0.25em;">
-                                You can upload multiple files. Accepted formats: PDF, DOC, DOCX, JPG, PNG (Max 10MB per file)
+                                You can upload multiple files. Accepted formats: {{ allowed_resume_extensions }} (Max {{ resume_max_file_size_mb }}MB per file)
                             </p>
                         </div>
                     {% endif %}
@@ -195,15 +212,22 @@
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.querySelector('form');
     const fileInputs = document.querySelectorAll('input[type="file"]');
+    const allowedExtensions = "{{ resume_file_accept_attribute }}".split(',').map(ext => ext.trim().toLowerCase());
+    const maxSize = {{ resume_max_file_size_mb }} * 1024 * 1024;
 
-    // File size validation (10MB max)
+    // Client-side checks mirror server-side checks for faster feedback.
     fileInputs.forEach(input => {
         input.addEventListener('change', function() {
-            const maxSize = 10 * 1024 * 1024; // 10MB in bytes
-
             Array.from(this.files).forEach(file => {
+                const extension = file.name.includes('.') ? `.${file.name.split('.').pop().toLowerCase()}` : '';
+                if (!allowedExtensions.includes(extension)) {
+                    alert(`File "${file.name}" is not supported. Allowed formats: {{ allowed_resume_extensions }}.`);
+                    this.value = '';
+                    return;
+                }
+
                 if (file.size > maxSize) {
-                    alert(`File "${file.name}" is too large. Maximum file size is 10MB.`);
+                    alert(`File "${file.name}" is too large. Maximum file size is {{ resume_max_file_size_mb }}MB.`);
                     this.value = '';
                     return;
                 }
