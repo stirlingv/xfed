@@ -180,7 +180,11 @@ def handle_intake_submission(request, form):
                     try:
                         normalized_email = normalize_and_validate_submission_email(field_value)
                     except ValidationError as exc:
-                        messages.error(request, exc.messages[0])
+                        _add_field_validation_error(
+                            request,
+                            field.label,
+                            exc.messages[0],
+                        )
                         return redirect('intake_form', slug=form.slug)
                     email_value = normalized_email
                     email_field_label = field.label
@@ -188,16 +192,29 @@ def handle_intake_submission(request, form):
                 else:
                     form_data[field.label] = field_value
             elif field.is_required:
-                messages.error(request, f"{field.label} is required.")
+                _add_field_validation_error(
+                    request,
+                    field.label,
+                    "This field is required.",
+                )
                 return redirect('intake_form', slug=form.slug)
 
         if not email_value:
-            messages.error(request, "Email address is required.")
+            _add_field_validation_error(
+                request,
+                "Email Address",
+                "This field is required.",
+            )
             return redirect('intake_form', slug=form.slug)
 
         # Prevent duplicate submissions per email per form
         if _submission_exists_for_email(form, email_value, email_field_label):
-            messages.error(request, "A submission with this email address has already been received for this form. Please contact us if you need to update your information.")
+            _add_field_validation_error(
+                request,
+                "Email Address",
+                f"This email has already been used for {form.title}. "
+                "Contact us if you need to update your information.",
+            )
             return redirect('intake_form', slug=form.slug)
 
         # Handle file uploads
@@ -207,7 +224,11 @@ def handle_intake_submission(request, form):
         for field in [f for f in configured_fields if f.field_type == 'file']:
             files = [uploaded for uploaded in request.FILES.getlist(field.field_name) if uploaded]
             if field.is_required and not files:
-                messages.error(request, f"{field.label} is required.")
+                _add_field_validation_error(
+                    request,
+                    field.label,
+                    "Please upload at least one file.",
+                )
                 return redirect('intake_form', slug=form.slug)
             for uploaded_file in files:
                 uploaded_files.append((uploaded_file, field.label))
@@ -221,16 +242,23 @@ def handle_intake_submission(request, form):
         if len(uploaded_files) > MAX_FILES_PER_SUBMISSION:
             messages.error(
                 request,
-                f"You can upload up to {MAX_FILES_PER_SUBMISSION} files per submission.",
+                (
+                    "Upload error: "
+                    f"You can upload up to {MAX_FILES_PER_SUBMISSION} files per submission."
+                ),
             )
             return redirect('intake_form', slug=form.slug)
 
         # Enforce resume-safe file types and file size on the server.
-        for uploaded_file, _field_label in uploaded_files:
+        for uploaded_file, field_label in uploaded_files:
             try:
                 validate_resume_upload(uploaded_file)
             except ValidationError as exc:
-                messages.error(request, exc.messages[0])
+                _add_field_validation_error(
+                    request,
+                    field_label,
+                    exc.messages[0],
+                )
                 return redirect('intake_form', slug=form.slug)
 
         # Create submission record
@@ -255,8 +283,19 @@ def handle_intake_submission(request, form):
         return render(request, 'intake_confirmation.html', { 'form': form })
 
     except Exception as e:
-        messages.error(request, f"There was an error processing your submission: {str(e)}")
+        logger.exception("Unexpected intake submission error for form '%s': %s", form.slug, str(e))
+        messages.error(
+            request,
+            (
+                "Submission could not be processed due to a server error. "
+                "Please try again, and contact support if the problem continues."
+            ),
+        )
         return redirect('intake_form', slug=form.slug)
+
+
+def _add_field_validation_error(request, field_label, reason):
+    messages.error(request, f"{field_label}: {reason}")
 
 
 def _submission_exists_for_email(form, email_value, email_field_label):

@@ -10,6 +10,36 @@
 {% endblock %}
 
 {% block content %}
+<style>
+    .intake-message {
+        margin-bottom: 1rem;
+        border-left: 4px solid #888;
+    }
+    .intake-message-success {
+        background: #dff0d8;
+        border: 1px solid #d6e9c6;
+        border-left-color: #3c763d;
+        color: #3c763d;
+    }
+    .intake-message-error {
+        background: #f8d7da;
+        border: 1px solid #f5c6cb;
+        border-left-color: #a94442;
+        color: #a94442;
+    }
+    .intake-message-warning {
+        background: #fff3cd;
+        border: 1px solid #ffeeba;
+        border-left-color: #856404;
+        color: #856404;
+    }
+    .intake-message-info {
+        background: #d1ecf1;
+        border: 1px solid #bee5eb;
+        border-left-color: #0c5460;
+        color: #0c5460;
+    }
+</style>
 <section>
     <header class="main">
         <h1>{{ form.title }}</h1>
@@ -24,7 +54,7 @@
 
     {% if messages %}
         {% for message in messages %}
-            <div class="box {% if message.tags == 'success' %}style="background: #dff0d8; border: 1px solid #d6e9c6; color: #3c763d;"{% endif %}">
+            <div class="box intake-message intake-message-{{ message.tags|default:'info' }}">
                 {{ message }}
             </div>
         {% endfor %}

@@ -13,7 +13,7 @@ from django.test import TestCase
 from django.test.utils import override_settings
 from django.urls import reverse
 
-from .models import IntakeFile, IntakeForm, IntakeSubmission
+from .models import IntakeField, IntakeFile, IntakeForm, IntakeSubmission
 from .validators import (
     MAX_RESUME_FILE_SIZE_BYTES,
     normalize_and_validate_submission_email,
@@ -109,6 +109,7 @@ class OwnerNotificationTests(TestCase):
     @override_settings(
         OWNER_NOTIFICATION_FORM_SLUGS=["join-our-team", "client-consultation"],
         OWNER_NOTIFICATION_EMAILS=["owner1@examplebusiness.com", "owner2@examplebusiness.com"],
+        ENABLE_SLACK_NOTIFICATIONS=False,
     )
     @patch("main.views.EmailMessage")
     def test_target_forms_send_owner_alert_email(self, email_message_cls):
@@ -135,6 +136,7 @@ class OwnerNotificationTests(TestCase):
     @override_settings(
         OWNER_NOTIFICATION_FORM_SLUGS=["join-our-team", "client-consultation"],
         OWNER_NOTIFICATION_EMAILS=["owner1@examplebusiness.com"],
+        ENABLE_SLACK_NOTIFICATIONS=False,
     )
     @patch("main.views.EmailMessage")
     def test_non_target_forms_do_not_send_owner_alert_email(self, email_message_cls):
@@ -199,6 +201,84 @@ class OwnerNotificationTests(TestCase):
 
         owner_email.send.assert_called_once()
         post_slack_webhook.assert_called_once()
+
+
+class IntakeSubmissionValidationFeedbackTests(TestCase):
+    def setUp(self):
+        self.form = IntakeForm.objects.create(
+            title="Feedback Form",
+            slug="feedback-form",
+            email_recipients="ops@examplebusiness.com",
+            allow_file_uploads=False,
+        )
+        IntakeField.objects.create(
+            form=self.form,
+            label="Full Name",
+            field_name="full_name",
+            field_type="text",
+            is_required=True,
+            order=1,
+        )
+        IntakeField.objects.create(
+            form=self.form,
+            label="Email Address",
+            field_name="email",
+            field_type="email",
+            is_required=True,
+            order=2,
+        )
+
+    def test_missing_required_field_shows_field_specific_message(self):
+        response = self.client.post(
+            reverse("intake_form", kwargs={"slug": self.form.slug}),
+            data={"email": "candidate@business.com"},
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        messages_list = list(response.context["messages"])
+        self.assertTrue(
+            any("Full Name: This field is required." in str(message) for message in messages_list)
+        )
+
+    def test_duplicate_email_shows_clear_rejection_reason(self):
+        IntakeSubmission.objects.create(
+            form=self.form,
+            data={"Email Address": "candidate@business.com", "Full Name": "Existing User"},
+        )
+
+        response = self.client.post(
+            reverse("intake_form", kwargs={"slug": self.form.slug}),
+            data={
+                "full_name": "Second User",
+                "email": "candidate@business.com",
+            },
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        messages_list = list(response.context["messages"])
+        self.assertTrue(
+            any("Email Address: This email has already been used for Feedback Form." in str(message)
+                for message in messages_list)
+        )
+
+    def test_invalid_email_domain_shows_field_specific_reason(self):
+        response = self.client.post(
+            reverse("intake_form", kwargs={"slug": self.form.slug}),
+            data={
+                "full_name": "Candidate User",
+                "email": "candidate@mailinator.com",
+            },
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        messages_list = list(response.context["messages"])
+        self.assertTrue(
+            any("Email Address: Please use a permanent email address." in str(message)
+                for message in messages_list)
+        )
 
 
 class IntakeFileAdminPreviewTests(TestCase):
