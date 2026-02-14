@@ -258,6 +258,12 @@ OWNER_NOTIFICATION_FORM_SLUGS = [
     )
 ]
 OWNER_NOTIFICATION_EMAILS = _env_list('OWNER_NOTIFICATION_EMAILS', '')
+UNIQUE_EMAIL_FORM_SLUGS = [
+    slug.lower() for slug in _env_list(
+        'UNIQUE_EMAIL_FORM_SLUGS',
+        'join-our-team',
+    )
+]
 ENABLE_SLACK_NOTIFICATIONS = _env_bool('ENABLE_SLACK_NOTIFICATIONS', False)
 SLACK_WEBHOOK_URL = os.environ.get('SLACK_WEBHOOK_URL', '')
 SLACK_NOTIFICATION_MENTION = os.environ.get('SLACK_NOTIFICATION_MENTION', '')

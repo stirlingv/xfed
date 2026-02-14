@@ -207,8 +207,11 @@ def handle_intake_submission(request, form):
             )
             return redirect('intake_form', slug=form.slug)
 
-        # Prevent duplicate submissions per email per form
-        if _submission_exists_for_email(form, email_value, email_field_label):
+        # Prevent duplicate submissions only for configured forms (e.g. join-our-team).
+        if (
+            _should_enforce_unique_email(form)
+            and _submission_exists_for_email(form, email_value, email_field_label)
+        ):
             _add_field_validation_error(
                 request,
                 "Email Address",
@@ -296,6 +299,13 @@ def handle_intake_submission(request, form):
 
 def _add_field_validation_error(request, field_label, reason):
     messages.error(request, f"{field_label}: {reason}")
+
+
+def _should_enforce_unique_email(form):
+    unique_email_slugs = getattr(settings, 'UNIQUE_EMAIL_FORM_SLUGS', ['join-our-team'])
+    if not unique_email_slugs:
+        return False
+    return (form.slug or '').lower() in {slug.lower() for slug in unique_email_slugs}
 
 
 def _submission_exists_for_email(form, email_value, email_field_label):

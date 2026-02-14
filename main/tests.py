@@ -241,6 +241,9 @@ class IntakeSubmissionValidationFeedbackTests(TestCase):
             any("Full Name: This field is required." in str(message) for message in messages_list)
         )
 
+    @override_settings(
+        UNIQUE_EMAIL_FORM_SLUGS=["feedback-form"],
+    )
     def test_duplicate_email_shows_clear_rejection_reason(self):
         IntakeSubmission.objects.create(
             form=self.form,
@@ -261,6 +264,57 @@ class IntakeSubmissionValidationFeedbackTests(TestCase):
         self.assertTrue(
             any("Email Address: This email has already been used for Feedback Form." in str(message)
                 for message in messages_list)
+        )
+
+    @override_settings(
+        UNIQUE_EMAIL_FORM_SLUGS=["join-our-team"],
+        ENABLE_SLACK_NOTIFICATIONS=False,
+        OWNER_NOTIFICATION_FORM_SLUGS=[],
+        OWNER_NOTIFICATION_EMAILS=[],
+    )
+    def test_duplicate_email_is_allowed_for_client_consultation(self):
+        client_form = IntakeForm.objects.create(
+            title="Request a Free Consultation",
+            slug="client-consultation",
+            email_recipients="ops@examplebusiness.com",
+            allow_file_uploads=False,
+        )
+        IntakeField.objects.create(
+            form=client_form,
+            label="Full Name",
+            field_name="full_name",
+            field_type="text",
+            is_required=True,
+            order=1,
+        )
+        IntakeField.objects.create(
+            form=client_form,
+            label="Email Address",
+            field_name="email",
+            field_type="email",
+            is_required=True,
+            order=2,
+        )
+
+        IntakeSubmission.objects.create(
+            form=client_form,
+            data={"Email Address": "candidate@business.com", "Full Name": "Existing User"},
+        )
+
+        response = self.client.post(
+            reverse("intake_form", kwargs={"slug": client_form.slug}),
+            data={
+                "full_name": "Second User",
+                "email": "candidate@business.com",
+            },
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(IntakeSubmission.objects.filter(form=client_form).count(), 2)
+        messages_list = list(response.context["messages"])
+        self.assertFalse(
+            any("already been used" in str(message) for message in messages_list)
         )
 
     def test_invalid_email_domain_shows_field_specific_reason(self):
