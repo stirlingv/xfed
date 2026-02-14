@@ -1,7 +1,6 @@
-import base64
+import json
 import logging
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 from django.shortcuts import render, get_object_or_404, redirect
@@ -295,38 +294,34 @@ def get_client_ip(request):
 
 def send_intake_notification(form, submission, form_data, uploaded_files):
     """Send email notification for new intake submission"""
-    try:
-        # Prepare email content
-        subject = f"New {form.title} Submission"
+    # Prepare shared subject/body for all notification channels.
+    subject = f"New {form.title} Submission"
+    message_lines = [
+        f"New submission received for: {form.title}",
+        f"Submitted at: {submission.submitted_at.strftime('%Y-%m-%d %H:%M:%S')}",
+        f"IP Address: {submission.ip_address}",
+        "",
+        "Form Data:",
+        "-" * 40,
+    ]
 
-        # Build message body
-        message_lines = [
-            f"New submission received for: {form.title}",
-            f"Submitted at: {submission.submitted_at.strftime('%Y-%m-%d %H:%M:%S')}",
-            f"IP Address: {submission.ip_address}",
+    for field_label, value in form_data.items():
+        message_lines.append(f"{field_label}: {value}")
+
+    if uploaded_files:
+        message_lines.extend([
             "",
-            "Form Data:",
+            f"Files Uploaded: {len(uploaded_files)}",
             "-" * 40,
-        ]
+        ])
+        for uploaded_file, field_label in uploaded_files:
+            message_lines.append(f"- {uploaded_file.name} ({field_label})")
 
-        for field_label, value in form_data.items():
-            message_lines.append(f"{field_label}: {value}")
+    message_body = "\n".join(message_lines)
 
-        if uploaded_files:
-            message_lines.extend([
-                "",
-                f"Files Uploaded: {len(uploaded_files)}",
-                "-" * 40,
-            ])
-            for uploaded_file, field_label in uploaded_files:
-                message_lines.append(f"- {uploaded_file.name} ({field_label})")
-
-        message_body = "\n".join(message_lines)
-
-        # Get email recipients
-        recipients = [email.strip() for email in form.email_recipients.split('\n') if email.strip()]
-
-        if recipients:
+    recipients = [email.strip() for email in form.email_recipients.split('\n') if email.strip()]
+    if recipients:
+        try:
             email = EmailMessage(
                 subject=subject,
                 body=message_body,
@@ -344,13 +339,31 @@ def send_intake_notification(form, submission, form_data, uploaded_files):
                 )
 
             email.send()
+        except Exception as exc:
+            logger.exception(
+                "Error sending intake recipient email for form '%s': %s",
+                form.slug,
+                str(exc),
+            )
 
-        if _should_notify_owners(form):
+    if _should_notify_owners(form):
+        try:
             _send_owner_email_alert(subject, message_body)
-            _send_owner_sms_alert(form, submission, form_data, uploaded_files)
+        except Exception as exc:
+            logger.exception(
+                "Error sending owner alert email for form '%s': %s",
+                form.slug,
+                str(exc),
+            )
 
-    except Exception as e:
-        logger.exception("Error sending intake notification for form '%s': %s", form.slug, str(e))
+        try:
+            _send_owner_slack_alert(form, submission, form_data, uploaded_files)
+        except Exception as exc:
+            logger.exception(
+                "Error sending owner Slack alert for form '%s': %s",
+                form.slug,
+                str(exc),
+            )
 
 
 def _should_notify_owners(form):
@@ -375,36 +388,49 @@ def _send_owner_email_alert(subject, message_body):
     owner_email.send()
 
 
-def _send_owner_sms_alert(form, submission, form_data, uploaded_files):
-    if not getattr(settings, 'ENABLE_SMS_NOTIFICATIONS', False):
+def _send_owner_slack_alert(form, submission, form_data, uploaded_files):
+    if not getattr(settings, 'ENABLE_SLACK_NOTIFICATIONS', False):
         return
 
-    account_sid = getattr(settings, 'TWILIO_ACCOUNT_SID', '').strip()
-    auth_token = getattr(settings, 'TWILIO_AUTH_TOKEN', '').strip()
-    from_number = getattr(settings, 'TWILIO_FROM_NUMBER', '').strip()
-    owner_phones = sorted(
-        {phone.strip() for phone in getattr(settings, 'OWNER_NOTIFICATION_PHONES', []) if phone.strip()}
-    )
-
-    if not (account_sid and auth_token and from_number and owner_phones):
-        logger.warning("SMS owner notifications skipped due to incomplete Twilio/phone settings.")
+    webhook_url = getattr(settings, 'SLACK_WEBHOOK_URL', '').strip()
+    if not webhook_url:
+        logger.warning("Slack owner notifications skipped because SLACK_WEBHOOK_URL is not set.")
         return
 
     client_identifier = _extract_client_identifier(form_data)
     file_count = len(uploaded_files)
+    mention = (getattr(settings, 'SLACK_NOTIFICATION_MENTION', '') or '').strip()
+    intro = f"{mention} " if mention else ""
     message = (
-        f"HireXFed alert: New {form.title} submission "
-        f"(ID {submission.id}) from {client_identifier}. Files: {file_count}."
+        f"{intro}HireXFed alert: New *{form.title}* submission "
+        f"(ID `{submission.id}`) from *{client_identifier}*. Files: *{file_count}*."
     )
 
-    for phone_number in owner_phones:
-        _send_twilio_sms(
-            account_sid=account_sid,
-            auth_token=auth_token,
-            from_number=from_number,
-            to_number=phone_number,
-            body=message,
-        )
+    details = []
+    for label, value in form_data.items():
+        if value:
+            details.append(f"• *{label}:* {value}")
+    if not details:
+        details.append("• No non-file fields captured.")
+
+    if uploaded_files:
+        details.append(f"• *Uploaded files:* {file_count}")
+
+    payload = {
+        "text": message,
+        "mrkdwn": True,
+        "blocks": [
+            {"type": "section", "text": {"type": "mrkdwn", "text": message}},
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": "\n".join(details[:20]),
+                },
+            },
+        ],
+    }
+    _post_slack_webhook(webhook_url, payload)
 
 
 def _extract_client_identifier(form_data):
@@ -420,25 +446,18 @@ def _extract_client_identifier(form_data):
     return "unknown sender"
 
 
-def _send_twilio_sms(account_sid, auth_token, from_number, to_number, body):
-    endpoint = f"https://api.twilio.com/2010-04-01/Accounts/{account_sid}/Messages.json"
-    payload = urlencode({
-        "From": from_number,
-        "To": to_number,
-        "Body": body,
-    }).encode("utf-8")
-
-    request = Request(endpoint, data=payload, method="POST")
-    auth_bytes = f"{account_sid}:{auth_token}".encode("utf-8")
-    auth_header = base64.b64encode(auth_bytes).decode("ascii")
-    request.add_header("Authorization", f"Basic {auth_header}")
-    request.add_header("Content-Type", "application/x-www-form-urlencoded")
-
+def _post_slack_webhook(webhook_url, payload):
+    request = Request(
+        webhook_url,
+        data=json.dumps(payload).encode("utf-8"),
+        method="POST",
+    )
+    request.add_header("Content-Type", "application/json")
     try:
         with urlopen(request, timeout=10):
             return
     except (HTTPError, URLError) as exc:
-        logger.exception("Failed to send SMS notification to %s: %s", to_number, str(exc))
+        logger.exception("Failed to send Slack notification: %s", str(exc))
 
 
 # Admin helper views

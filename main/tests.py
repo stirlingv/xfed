@@ -109,7 +109,6 @@ class OwnerNotificationTests(TestCase):
     @override_settings(
         OWNER_NOTIFICATION_FORM_SLUGS=["join-our-team", "client-consultation"],
         OWNER_NOTIFICATION_EMAILS=["owner1@examplebusiness.com", "owner2@examplebusiness.com"],
-        ENABLE_SMS_NOTIFICATIONS=False,
     )
     @patch("main.views.EmailMessage")
     def test_target_forms_send_owner_alert_email(self, email_message_cls):
@@ -136,7 +135,6 @@ class OwnerNotificationTests(TestCase):
     @override_settings(
         OWNER_NOTIFICATION_FORM_SLUGS=["join-our-team", "client-consultation"],
         OWNER_NOTIFICATION_EMAILS=["owner1@examplebusiness.com"],
-        ENABLE_SMS_NOTIFICATIONS=False,
     )
     @patch("main.views.EmailMessage")
     def test_non_target_forms_do_not_send_owner_alert_email(self, email_message_cls):
@@ -153,16 +151,14 @@ class OwnerNotificationTests(TestCase):
 
     @override_settings(
         OWNER_NOTIFICATION_FORM_SLUGS=["join-our-team", "client-consultation"],
-        OWNER_NOTIFICATION_PHONES=["+15551230001", "+15551230002"],
-        ENABLE_SMS_NOTIFICATIONS=True,
-        TWILIO_ACCOUNT_SID="sid",
-        TWILIO_AUTH_TOKEN="token",
-        TWILIO_FROM_NUMBER="+15550001111",
+        ENABLE_SLACK_NOTIFICATIONS=True,
+        SLACK_WEBHOOK_URL="https://hooks.slack.com/services/test/webhook",
+        SLACK_NOTIFICATION_MENTION="<!here>",
     )
-    @patch("main.views._send_twilio_sms")
+    @patch("main.views._post_slack_webhook")
     @patch("main.views.EmailMessage")
-    def test_target_forms_send_sms_to_all_owner_numbers(
-        self, email_message_cls, send_twilio_sms
+    def test_target_forms_send_slack_alert(
+        self, email_message_cls, post_slack_webhook
     ):
         regular_email = MagicMock()
         email_message_cls.return_value = regular_email
@@ -173,15 +169,36 @@ class OwnerNotificationTests(TestCase):
         )
         send_intake_notification(*payload)
 
-        self.assertEqual(send_twilio_sms.call_count, 2)
-        all_calls = [call.kwargs for call in send_twilio_sms.call_args_list]
-        self.assertEqual(
-            {call["to_number"] for call in all_calls},
-            {"+15551230001", "+15551230002"},
+        post_slack_webhook.assert_called_once()
+        webhook_url, payload = post_slack_webhook.call_args.args
+        self.assertEqual(webhook_url, "https://hooks.slack.com/services/test/webhook")
+        self.assertIn("Request a Free Consultation", payload["text"])
+        self.assertIn("<!here>", payload["text"])
+
+    @override_settings(
+        OWNER_NOTIFICATION_FORM_SLUGS=["join-our-team", "client-consultation"],
+        OWNER_NOTIFICATION_EMAILS=["owner1@examplebusiness.com"],
+        ENABLE_SLACK_NOTIFICATIONS=True,
+        SLACK_WEBHOOK_URL="https://hooks.slack.com/services/test/webhook",
+    )
+    @patch("main.views._post_slack_webhook")
+    @patch("main.views.EmailMessage")
+    def test_owner_slack_still_sends_when_primary_email_channel_fails(
+        self, email_message_cls, post_slack_webhook
+    ):
+        regular_email = MagicMock()
+        regular_email.send.side_effect = Exception("smtp failure")
+        owner_email = MagicMock()
+        email_message_cls.side_effect = [regular_email, owner_email]
+
+        payload = self._build_submission_payload(
+            "client-consultation",
+            "Request a Free Consultation",
         )
-        self.assertTrue(
-            all("Request a Free Consultation" in call["body"] for call in all_calls)
-        )
+        send_intake_notification(*payload)
+
+        owner_email.send.assert_called_once()
+        post_slack_webhook.assert_called_once()
 
 
 class IntakeFileAdminPreviewTests(TestCase):
