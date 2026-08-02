@@ -115,7 +115,7 @@
 													</ul>
 												</li>
 												<li><a href="#">About Us</a></li>
-												<li><a href="#">Contact</a></li>
+												<li><a href="/intake/contact-us/">Contact</a></li>
 												<li>
 													<span class="opener">Resources (Admin Configurable)</span>
 													<ul>
@@ -186,12 +186,12 @@
 									<ul class="contact">
 										{% block contact_info %}
 											{% if contact_info %}
-												<li class="icon solid fa-envelope"><a href="mailto:{{ contact_info.email }}">{{ contact_info.email }}</a></li>
+												<li class="icon solid fa-envelope"><a href="/intake/contact-us/">Send us a message</a></li>
 												<li class="icon solid fa-calendar-check"><a href="/intake/client-consultation/">Request a Callback</a></li>
 												<li class="icon solid fa-home">{{ contact_info.address|linebreaks }}</li>
 											{% else %}
 												<!-- Default contact info if none configured -->
-												<li class="icon solid fa-envelope"><a href="mailto:help@hirexfed.com">help@hirexfed.com</a></li>
+												<li class="icon solid fa-envelope"><a href="/intake/contact-us/">Send us a message</a></li>
 												<li class="icon solid fa-calendar-check"><a href="/intake/client-consultation/">Request a Callback</a></li>
 												<li class="icon solid fa-home">Serving clients nationwide<br />
 												Remote consultations available</li>

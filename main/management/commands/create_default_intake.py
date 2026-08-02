@@ -12,7 +12,6 @@ class Command(BaseCommand):
                 'title': 'Client Intake Form',
                 'description': 'Please fill out this form to help us understand your needs and provide the best possible service.',
                 'success_message': 'Thank you for your submission! We will review your information and contact you within 24 hours.',
-                'email_recipients': 'admin@xfedtax.com\ninfo@xfedtax.com',
                 'is_active': True,
                 'allow_file_uploads': True,
             }

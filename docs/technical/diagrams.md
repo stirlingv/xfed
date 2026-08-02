@@ -166,21 +166,21 @@ flowchart LR
     validate -->|error| return_error[Return error message]
 
     save_submission --> save_files[Create IntakeFile records]
-    save_submission --> send_email[Send email notification]
+    save_submission --> send_slack[Send Slack notification]
 
     save_files --> storage[(File storage)]
     save_submission --> db[(Database)]
-    send_email --> smtp[SMTP service]
+    send_slack --> slack[Slack incoming webhook]
 
     admin[Admin/Staff] --> admin_ui[Admin UI]
     admin_ui --> db
     admin_ui --> storage
 
-    note_sec[Transport security depends on HTTPS/TLS and SMTP TLS configuration in deployment.]:::note
+    note_sec[Transport security depends on HTTPS/TLS; Slack webhooks are HTTPS.]:::note
 
     classDef note fill:#f5f5f5,stroke:#999,stroke-width:1px,color:#333;
     note_sec -.-> intake_form
-    note_sec -.-> smtp
+    note_sec -.-> slack
 ```
 
 ## Content Publishing Flow (Dynamic Pages)
@@ -229,17 +229,19 @@ flowchart LR
     render_menu --> response[HTML Response]
 ```
 
-## Email Notification Path (Intake Submission)
+## Slack Notification Path (Intake Submission)
 
 ```mermaid
 flowchart LR
-    submission[Create IntakeSubmission] --> build_email[Build EmailMessage]
-    build_email --> attach_files[Attach Uploaded Files]
-    attach_files --> smtp[SMTP Server]
-    smtp --> recipients[Email Recipients]
+    submission[Create IntakeSubmission] --> build_msg[Build Slack message blocks]
+    build_msg --> mention{Priority form?}
+    mention -->|yes| add_mention[Prepend @-mention]
+    mention -->|no| post_hook
+    add_mention --> post_hook[POST to incoming webhook]
+    post_hook --> channel[Slack channel]
 
-    note_email[Delivery and TLS depend on SMTP configuration.]:::note
-    note_email -.-> smtp
+    note_slack[Uploaded files are listed by name; the alert links to the admin submission page. A webhook failure is logged and never blocks the submission.]:::note
+    note_slack -.-> post_hook
 
     classDef note fill:#f5f5f5,stroke:#999,stroke-width:1px,color:#333;
 ```

@@ -240,34 +240,34 @@ else:
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Email Configuration
-# Using Gmail SMTP for sending notifications
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
-EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
-DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'HireXFed <noreply@hirexfed.com>')
+# Notifications
+# Outbound email was retired along with the Google Workspace (Gmail) account;
+# Slack is the only notification channel. The console backend keeps any stray
+# email call from erroring — it just logs to stdout.
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
-# Owner alerts for high-priority intake submissions
+# Public base URL used to build "open in admin" links inside Slack alerts.
+SITE_BASE_URL = os.environ.get('SITE_BASE_URL', 'https://hirexfed.com')
+
+# Slack alerts for intake submissions. SLACK_WEBHOOK_URL is the original
+# webhook (also used by CI for deploy notifications); SLACK_INTAKE_WEBHOOK_URL
+# lets website inquiries go to their own channel and falls back to
+# SLACK_WEBHOOK_URL when unset.
+ENABLE_SLACK_NOTIFICATIONS = _env_bool('ENABLE_SLACK_NOTIFICATIONS', True)
+SLACK_WEBHOOK_URL = os.environ.get('SLACK_WEBHOOK_URL', '')
+SLACK_INTAKE_WEBHOOK_URL = os.environ.get('SLACK_INTAKE_WEBHOOK_URL', '') or SLACK_WEBHOOK_URL
+SLACK_NOTIFICATION_MENTION = os.environ.get('SLACK_NOTIFICATION_MENTION', '')
+
+# Forms whose Slack alerts include SLACK_NOTIFICATION_MENTION (an @-mention)
 OWNER_NOTIFICATION_FORM_SLUGS = [
     slug.lower() for slug in _env_list(
         'OWNER_NOTIFICATION_FORM_SLUGS',
-        'join-our-team,client-consultation',
+        'join-our-team,client-consultation,contact-us',
     )
 ]
-OWNER_NOTIFICATION_EMAILS = _env_list('OWNER_NOTIFICATION_EMAILS', '')
 UNIQUE_EMAIL_FORM_SLUGS = [
     slug.lower() for slug in _env_list(
         'UNIQUE_EMAIL_FORM_SLUGS',
         'join-our-team',
     )
 ]
-ENABLE_SLACK_NOTIFICATIONS = _env_bool('ENABLE_SLACK_NOTIFICATIONS', False)
-SLACK_WEBHOOK_URL = os.environ.get('SLACK_WEBHOOK_URL', '')
-SLACK_NOTIFICATION_MENTION = os.environ.get('SLACK_NOTIFICATION_MENTION', '')
-
-# For development, use console backend if no email configured
-if DEBUG and not EMAIL_HOST_USER:
-    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

@@ -103,10 +103,10 @@ class Command(BaseCommand):
             opens_new_window=True
         )
 
-        # Contact page
+        # Contact form (Slack-backed intake form, not email)
         NavigationItem.objects.create(
             title="Contact",
-            url="/contact/",
+            url="/intake/contact-us/",
             order=50,
             icon_class="fa-envelope"
         )
@@ -156,7 +156,7 @@ class Command(BaseCommand):
 
         SocialMediaLink.objects.create(
             platform="envelope",
-            url="mailto:contact@xfedtax.com",
+            url="/intake/contact-us/",
             order=40
         )
 

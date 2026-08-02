@@ -38,7 +38,7 @@ Welcome to the XFED Tax Solutions documentation. This documentation covers both 
 ### Intake Form System
 - **Configurable Forms**: Create custom intake forms with various field types
 - **File Uploads**: Secure document upload and management
-- **Email Integration**: Automatic notifications with file attachments
+- **Slack Integration**: Automatic Slack alerts for every submission (email delivery retired)
 - **Multi-Form Support**: Different forms for different business needs
 
 ### Submission Management

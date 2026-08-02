@@ -2,7 +2,7 @@ import io
 import shutil
 import tempfile
 import zipfile
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -87,12 +87,11 @@ class SubmissionValidationTests(TestCase):
             normalize_and_validate_submission_email("test@realcompany.com")
 
 
-class OwnerNotificationTests(TestCase):
+class SlackNotificationTests(TestCase):
     def _build_submission_payload(self, form_slug, form_title):
         form = IntakeForm.objects.create(
             title=form_title,
             slug=form_slug,
-            email_recipients="ops@examplebusiness.com",
             allow_file_uploads=True,
         )
         submission = IntakeSubmission.objects.create(
@@ -107,100 +106,127 @@ class OwnerNotificationTests(TestCase):
         return form, submission, form_data, []
 
     @override_settings(
-        OWNER_NOTIFICATION_FORM_SLUGS=["join-our-team", "client-consultation"],
-        OWNER_NOTIFICATION_EMAILS=["owner1@examplebusiness.com", "owner2@examplebusiness.com"],
-        ENABLE_SLACK_NOTIFICATIONS=False,
-    )
-    @patch("main.views.EmailMessage")
-    def test_target_forms_send_owner_alert_email(self, email_message_cls):
-        regular_email = MagicMock()
-        owner_email = MagicMock()
-        email_message_cls.side_effect = [regular_email, owner_email]
-
-        payload = self._build_submission_payload("join-our-team", "Join Our Team")
-        send_intake_notification(*payload)
-
-        self.assertEqual(email_message_cls.call_count, 2)
-        first_call_kwargs = email_message_cls.call_args_list[0].kwargs
-        second_call_kwargs = email_message_cls.call_args_list[1].kwargs
-
-        self.assertEqual(first_call_kwargs["to"], ["ops@examplebusiness.com"])
-        self.assertEqual(
-            second_call_kwargs["to"],
-            ["owner1@examplebusiness.com", "owner2@examplebusiness.com"],
-        )
-        self.assertTrue(second_call_kwargs["subject"].startswith("[Owner Alert] "))
-        regular_email.send.assert_called_once()
-        owner_email.send.assert_called_once()
-
-    @override_settings(
-        OWNER_NOTIFICATION_FORM_SLUGS=["join-our-team", "client-consultation"],
-        OWNER_NOTIFICATION_EMAILS=["owner1@examplebusiness.com"],
-        ENABLE_SLACK_NOTIFICATIONS=False,
-    )
-    @patch("main.views.EmailMessage")
-    def test_non_target_forms_do_not_send_owner_alert_email(self, email_message_cls):
-        regular_email = MagicMock()
-        email_message_cls.return_value = regular_email
-
-        payload = self._build_submission_payload("general-intake", "General Intake")
-        send_intake_notification(*payload)
-
-        self.assertEqual(email_message_cls.call_count, 1)
-        first_call_kwargs = email_message_cls.call_args_list[0].kwargs
-        self.assertEqual(first_call_kwargs["to"], ["ops@examplebusiness.com"])
-        regular_email.send.assert_called_once()
-
-    @override_settings(
-        OWNER_NOTIFICATION_FORM_SLUGS=["join-our-team", "client-consultation"],
         ENABLE_SLACK_NOTIFICATIONS=True,
-        SLACK_WEBHOOK_URL="https://hooks.slack.com/services/test/webhook",
+        SLACK_INTAKE_WEBHOOK_URL="https://hooks.slack.com/services/test/webhook",
+        OWNER_NOTIFICATION_FORM_SLUGS=["join-our-team", "client-consultation", "contact-us"],
         SLACK_NOTIFICATION_MENTION="<!here>",
     )
     @patch("main.views._post_slack_webhook")
-    @patch("main.views.EmailMessage")
-    def test_target_forms_send_slack_alert(
-        self, email_message_cls, post_slack_webhook
-    ):
-        regular_email = MagicMock()
-        email_message_cls.return_value = regular_email
-
-        payload = self._build_submission_payload(
-            "client-consultation",
-            "Request a Free Consultation",
-        )
+    def test_every_form_sends_slack_alert(self, post_slack_webhook):
+        payload = self._build_submission_payload("general-intake", "General Intake")
         send_intake_notification(*payload)
 
         post_slack_webhook.assert_called_once()
-        webhook_url, payload = post_slack_webhook.call_args.args
+        webhook_url, slack_payload = post_slack_webhook.call_args.args
         self.assertEqual(webhook_url, "https://hooks.slack.com/services/test/webhook")
-        self.assertIn("Request a Free Consultation", payload["text"])
-        self.assertIn("<!here>", payload["text"])
+        self.assertIn("General Intake", slack_payload["text"])
+        # Non-priority forms should not ping the channel.
+        self.assertNotIn("<!here>", slack_payload["text"])
 
     @override_settings(
-        OWNER_NOTIFICATION_FORM_SLUGS=["join-our-team", "client-consultation"],
-        OWNER_NOTIFICATION_EMAILS=["owner1@examplebusiness.com"],
         ENABLE_SLACK_NOTIFICATIONS=True,
-        SLACK_WEBHOOK_URL="https://hooks.slack.com/services/test/webhook",
+        SLACK_INTAKE_WEBHOOK_URL="https://hooks.slack.com/services/test/webhook",
+        OWNER_NOTIFICATION_FORM_SLUGS=["join-our-team", "client-consultation", "contact-us"],
+        SLACK_NOTIFICATION_MENTION="<!here>",
     )
     @patch("main.views._post_slack_webhook")
-    @patch("main.views.EmailMessage")
-    def test_owner_slack_still_sends_when_primary_email_channel_fails(
-        self, email_message_cls, post_slack_webhook
-    ):
-        regular_email = MagicMock()
-        regular_email.send.side_effect = Exception("smtp failure")
-        owner_email = MagicMock()
-        email_message_cls.side_effect = [regular_email, owner_email]
-
+    def test_priority_forms_include_mention(self, post_slack_webhook):
         payload = self._build_submission_payload(
             "client-consultation",
             "Request a Free Consultation",
         )
         send_intake_notification(*payload)
 
-        owner_email.send.assert_called_once()
         post_slack_webhook.assert_called_once()
+        _webhook_url, slack_payload = post_slack_webhook.call_args.args
+        self.assertIn("Request a Free Consultation", slack_payload["text"])
+        self.assertIn("<!here>", slack_payload["text"])
+
+    @override_settings(
+        ENABLE_SLACK_NOTIFICATIONS=True,
+        SLACK_INTAKE_WEBHOOK_URL="https://hooks.slack.com/services/test/webhook",
+        OWNER_NOTIFICATION_FORM_SLUGS=["contact-us"],
+        SLACK_NOTIFICATION_MENTION="<!here>",
+    )
+    @patch("main.views._post_slack_webhook")
+    def test_contact_form_sends_priority_slack_alert(self, post_slack_webhook):
+        # The contact-us form is seeded by migration 0015.
+        form = IntakeForm.objects.get(slug="contact-us")
+        submission = IntakeSubmission.objects.create(
+            form=form,
+            data={"Email Address": "visitor@examplebusiness.com"},
+            ip_address="127.0.0.1",
+        )
+        form_data = {
+            "Email Address": "visitor@examplebusiness.com",
+            "Message": "I have a question about tax services.",
+        }
+        send_intake_notification(form, submission, form_data, [])
+
+        post_slack_webhook.assert_called_once()
+        _webhook_url, slack_payload = post_slack_webhook.call_args.args
+        self.assertIn("Contact Us", slack_payload["text"])
+        self.assertIn("<!here>", slack_payload["text"])
+
+    @override_settings(
+        ENABLE_SLACK_NOTIFICATIONS=True,
+        SLACK_INTAKE_WEBHOOK_URL="https://hooks.slack.com/services/test/webhook",
+        SITE_BASE_URL="https://hirexfed.com",
+    )
+    @patch("main.views._post_slack_webhook")
+    def test_slack_alert_links_to_admin_submission(self, post_slack_webhook):
+        form, submission, form_data, files = self._build_submission_payload(
+            "general-intake", "General Intake"
+        )
+        send_intake_notification(form, submission, form_data, files)
+
+        _webhook_url, slack_payload = post_slack_webhook.call_args.args
+        rendered = str(slack_payload["blocks"])
+        self.assertIn(
+            f"https://hirexfed.com/admin/main/intakesubmission/{submission.id}/change/",
+            rendered,
+        )
+
+    @override_settings(
+        ENABLE_SLACK_NOTIFICATIONS=True,
+        SLACK_INTAKE_WEBHOOK_URL="",
+        SLACK_WEBHOOK_URL="",
+    )
+    @patch("main.views._post_slack_webhook")
+    def test_missing_webhook_skips_without_error(self, post_slack_webhook):
+        payload = self._build_submission_payload("general-intake", "General Intake")
+        send_intake_notification(*payload)
+        post_slack_webhook.assert_not_called()
+
+    @override_settings(
+        ENABLE_SLACK_NOTIFICATIONS=False,
+        SLACK_INTAKE_WEBHOOK_URL="https://hooks.slack.com/services/test/webhook",
+    )
+    @patch("main.views._post_slack_webhook")
+    def test_disabled_notifications_skip_webhook(self, post_slack_webhook):
+        payload = self._build_submission_payload("general-intake", "General Intake")
+        send_intake_notification(*payload)
+        post_slack_webhook.assert_not_called()
+
+    @override_settings(
+        ENABLE_SLACK_NOTIFICATIONS=True,
+        SLACK_INTAKE_WEBHOOK_URL="https://hooks.slack.com/services/test/webhook",
+    )
+    @patch("main.views._post_slack_webhook", side_effect=Exception("slack down"))
+    def test_webhook_failure_does_not_raise(self, post_slack_webhook):
+        payload = self._build_submission_payload("general-intake", "General Intake")
+        # A Slack outage must never break the submission flow.
+        send_intake_notification(*payload)
+        post_slack_webhook.assert_called_once()
+
+
+class ContactFormMigrationTests(TestCase):
+    def test_contact_form_exists_with_expected_fields(self):
+        form = IntakeForm.objects.get(slug="contact-us")
+        self.assertTrue(form.is_active)
+        self.assertFalse(form.allow_file_uploads)
+        field_names = set(form.fields.values_list("field_name", flat=True))
+        self.assertEqual(field_names, {"full_name", "email", "subject", "message"})
 
 
 class IntakeSubmissionValidationFeedbackTests(TestCase):
@@ -208,7 +234,6 @@ class IntakeSubmissionValidationFeedbackTests(TestCase):
         self.form = IntakeForm.objects.create(
             title="Feedback Form",
             slug="feedback-form",
-            email_recipients="ops@examplebusiness.com",
             allow_file_uploads=False,
         )
         IntakeField.objects.create(
@@ -269,14 +294,11 @@ class IntakeSubmissionValidationFeedbackTests(TestCase):
     @override_settings(
         UNIQUE_EMAIL_FORM_SLUGS=["join-our-team"],
         ENABLE_SLACK_NOTIFICATIONS=False,
-        OWNER_NOTIFICATION_FORM_SLUGS=[],
-        OWNER_NOTIFICATION_EMAILS=[],
     )
     def test_duplicate_email_is_allowed_for_client_consultation(self):
         client_form = IntakeForm.objects.create(
             title="Request a Free Consultation",
             slug="client-consultation",
-            email_recipients="ops@examplebusiness.com",
             allow_file_uploads=False,
         )
         IntakeField.objects.create(
@@ -352,7 +374,6 @@ class IntakeFileAdminPreviewTests(TestCase):
         self.form = IntakeForm.objects.create(
             title="Resume Intake",
             slug="resume-intake",
-            email_recipients="ops@examplebusiness.com",
             allow_file_uploads=True,
         )
         self.submission = IntakeSubmission.objects.create(
@@ -394,7 +415,6 @@ class IntakeFileCleanupTests(TestCase):
         self.form = IntakeForm.objects.create(
             title="Cleanup Intake",
             slug="cleanup-intake",
-            email_recipients="ops@examplebusiness.com",
             allow_file_uploads=True,
         )
 
@@ -472,7 +492,6 @@ class IntakeFileUploadRoutingTests(TestCase):
         form = IntakeForm.objects.create(
             title=form_title,
             slug=form_slug,
-            email_recipients="ops@examplebusiness.com",
             allow_file_uploads=True,
         )
         submission = IntakeSubmission.objects.create(
@@ -513,7 +532,6 @@ class SetupHireXfedContentCommandTests(TestCase):
         form = IntakeForm.objects.create(
             title="Existing Consultation",
             slug="client-consultation",
-            email_recipients="team@examplebusiness.com",
             allow_file_uploads=True,
         )
         submission = IntakeSubmission.objects.create(
@@ -537,7 +555,6 @@ class SetupHireXfedContentCommandTests(TestCase):
         form = IntakeForm.objects.create(
             title="Existing Consultation",
             slug="client-consultation",
-            email_recipients="team@examplebusiness.com",
             allow_file_uploads=True,
         )
         IntakeSubmission.objects.create(

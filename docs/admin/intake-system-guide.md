@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Intake Form system allows you to create multiple, fully customizable intake forms through the Django admin interface. Each form can have different fields, validation rules, and email notifications.
+The Intake Form system allows you to create multiple, fully customizable intake forms through the Django admin interface. Each form can have different fields and validation rules; every submission triggers a Slack notification.
 
 ## Features
 
@@ -28,17 +28,17 @@ The Intake Form system allows you to create multiple, fully customizable intake 
 - Display order control
 - Validation rules
 
-### ✅ **Email Notifications**
-- Automatic email notifications to multiple recipients
-- Includes all submitted data
-- File attachments included in emails
+### ✅ **Slack Notifications**
+- Automatic Slack alert for every submission
+- Includes all submitted data and a link to the submission in the admin
+- High-priority forms (consultation, network applications, contact) can @-mention the channel
 - Custom success messages
 
 ### ✅ **File Upload Support**
 - Multiple file upload capability
 - File size validation (10MB max per file)
 - Secure file storage
-- Files attached to email notifications
+- File names listed in Slack notifications; files reviewed via the admin
 
 ## How to Use
 
@@ -54,7 +54,6 @@ The Intake Form system allows you to create multiple, fully customizable intake 
      - **Form Title**: "Client Intake Form"
      - **Form URL**: "client-intake" (creates `/intake/client-intake/`)
      - **Description**: Optional description shown to users
-     - **Email Recipients**: Email addresses for notifications (one per line)
      - **Success Message**: Message shown after submission
      - **Form Active**: Check to make form accessible
      - **Allow File Uploads**: Enable document uploads
@@ -76,9 +75,6 @@ The Intake Form system allows you to create multiple, fully customizable intake 
 Title: Client Intake Form
 URL: client-intake
 Description: Please fill out this form to help us understand your needs...
-Email Recipients:
-  admin@xfedtax.com
-  intake@xfedtax.com
 ```
 
 ### Form Fields:
@@ -134,7 +130,7 @@ Order 6: Comments (textarea, optional)
 ### **File Upload**
 - File upload capability
 - Good for: Documents, images, contracts
-- Features: Multiple files, 10MB limit per file, email attachment
+- Features: Multiple files, 10MB limit per file, reviewed in admin
 
 ## Multiple Forms Examples
 
@@ -199,21 +195,24 @@ Order 6: Comments (textarea, optional)
 - Create menu items that link directly to intake forms
 - Use Dynamic Pages for marketing, intake forms for data collection
 
-## Email Configuration
+## Slack Notification Configuration
 
-### **Recipients Setup**
+Set these environment variables in your deployment:
+
 ```
-admin@xfedtax.com
-intake@xfedtax.com
-manager@xfedtax.com
+ENABLE_SLACK_NOTIFICATIONS=true            # on by default
+SLACK_INTAKE_WEBHOOK_URL=<webhook url>     # channel for website form alerts
+SLACK_WEBHOOK_URL=<webhook url>            # fallback (also used for deploy alerts)
+SLACK_NOTIFICATION_MENTION=<!here>         # optional @-mention for priority forms
+OWNER_NOTIFICATION_FORM_SLUGS=join-our-team,client-consultation,contact-us
+SITE_BASE_URL=https://hirexfed.com         # used for admin links in alerts
 ```
 
-### **Email Content Includes**:
-- Form name and submission timestamp
+### **Slack Alert Content Includes**:
+- Form name and submission ID
 - All submitted field data
-- IP address of submitter
-- All uploaded files as attachments
-- Professional formatting
+- Names of any uploaded files
+- Direct link to the submission in the Django admin
 
 ## Security Features
 
@@ -236,9 +235,8 @@ manager@xfedtax.com
 2. ✅ **Create your first form** in admin
 3. ✅ **Add form fields** (start with basic contact info)
 4. ✅ **Test the form** by visiting `/intake/your-form-slug/`
-5. ✅ **Configure email recipients**
-6. ✅ **Set up email server** in Django settings
-7. ✅ **Add navigation links** to your forms
+5. ✅ **Configure the Slack webhook** environment variables
+6. ✅ **Add navigation links** to your forms
 
 ## Next Steps
 
