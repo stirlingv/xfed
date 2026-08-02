@@ -201,7 +201,7 @@ Set these environment variables in your deployment:
 
 ```
 ENABLE_SLACK_NOTIFICATIONS=true            # on by default
-SLACK_CONTACT_WEBHOOK_URL=<webhook url>    # #xfed-contact-us: contact form messages
+SLACK_WEBHOOK_URL_CONTACT_US=<webhook url> # #xfed-contact-us: contact form messages
 SLACK_INTAKE_WEBHOOK_URL=<webhook url>     # channel for all other form alerts
 SLACK_WEBHOOK_URL=<webhook url>            # fallback (also used for deploy alerts)
 SLACK_NOTIFICATION_MENTION=<!here>         # optional @-mention for priority forms
@@ -209,11 +209,14 @@ OWNER_NOTIFICATION_FORM_SLUGS=join-our-team,client-consultation,contact-us
 SITE_BASE_URL=https://hirexfed.com         # used for admin links in alerts
 ```
 
-Routing: the `contact-us` form posts to `SLACK_CONTACT_WEBHOOK_URL`; every
-other form posts to `SLACK_INTAKE_WEBHOOK_URL`. Each level falls back to the
-next (`SLACK_CONTACT_WEBHOOK_URL` → `SLACK_INTAKE_WEBHOOK_URL` →
-`SLACK_WEBHOOK_URL`), so alerts are never dropped just because a dedicated
-channel webhook is missing.
+Routing: the `contact-us` form posts to `SLACK_WEBHOOK_URL_CONTACT_US`
+(alias: `SLACK_CONTACT_WEBHOOK_URL`); every other form posts to
+`SLACK_INTAKE_WEBHOOK_URL`. Each level falls back to the next (contact →
+intake → `SLACK_WEBHOOK_URL`), so alerts are never dropped just because a
+dedicated channel webhook is missing.
+
+Note: each Slack channel needs its own webhook URL — a webhook is bound to
+one channel when it is created, so the channel cannot be chosen per message.
 
 ### **Slack Alert Content Includes**:
 - Form name and submission ID

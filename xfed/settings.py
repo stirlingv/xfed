@@ -258,7 +258,12 @@ SLACK_WEBHOOK_URL = os.environ.get('SLACK_WEBHOOK_URL', '')
 SLACK_INTAKE_WEBHOOK_URL = os.environ.get('SLACK_INTAKE_WEBHOOK_URL', '') or SLACK_WEBHOOK_URL
 # Webhook for the public contact form's channel (#xfed-contact-us). Falls back
 # to the general intake webhook so contact messages are never dropped.
-SLACK_CONTACT_WEBHOOK_URL = os.environ.get('SLACK_CONTACT_WEBHOOK_URL', '')
+# SLACK_WEBHOOK_URL_CONTACT_US is the name used in the Render environment;
+# SLACK_CONTACT_WEBHOOK_URL is accepted as an alias.
+SLACK_CONTACT_WEBHOOK_URL = (
+    os.environ.get('SLACK_WEBHOOK_URL_CONTACT_US', '')
+    or os.environ.get('SLACK_CONTACT_WEBHOOK_URL', '')
+)
 # Per-form routing: slugs listed here post to their own webhook; any form not
 # listed (or whose webhook is unset) uses SLACK_INTAKE_WEBHOOK_URL.
 SLACK_FORM_WEBHOOK_URLS = {
