@@ -201,12 +201,19 @@ Set these environment variables in your deployment:
 
 ```
 ENABLE_SLACK_NOTIFICATIONS=true            # on by default
-SLACK_INTAKE_WEBHOOK_URL=<webhook url>     # channel for website form alerts
+SLACK_CONTACT_WEBHOOK_URL=<webhook url>    # #xfed-contact-us: contact form messages
+SLACK_INTAKE_WEBHOOK_URL=<webhook url>     # channel for all other form alerts
 SLACK_WEBHOOK_URL=<webhook url>            # fallback (also used for deploy alerts)
 SLACK_NOTIFICATION_MENTION=<!here>         # optional @-mention for priority forms
 OWNER_NOTIFICATION_FORM_SLUGS=join-our-team,client-consultation,contact-us
 SITE_BASE_URL=https://hirexfed.com         # used for admin links in alerts
 ```
+
+Routing: the `contact-us` form posts to `SLACK_CONTACT_WEBHOOK_URL`; every
+other form posts to `SLACK_INTAKE_WEBHOOK_URL`. Each level falls back to the
+next (`SLACK_CONTACT_WEBHOOK_URL` → `SLACK_INTAKE_WEBHOOK_URL` →
+`SLACK_WEBHOOK_URL`), so alerts are never dropped just because a dedicated
+channel webhook is missing.
 
 ### **Slack Alert Content Includes**:
 - Form name and submission ID

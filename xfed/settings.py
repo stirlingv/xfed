@@ -256,6 +256,14 @@ SITE_BASE_URL = os.environ.get('SITE_BASE_URL', 'https://hirexfed.com')
 ENABLE_SLACK_NOTIFICATIONS = _env_bool('ENABLE_SLACK_NOTIFICATIONS', True)
 SLACK_WEBHOOK_URL = os.environ.get('SLACK_WEBHOOK_URL', '')
 SLACK_INTAKE_WEBHOOK_URL = os.environ.get('SLACK_INTAKE_WEBHOOK_URL', '') or SLACK_WEBHOOK_URL
+# Webhook for the public contact form's channel (#xfed-contact-us). Falls back
+# to the general intake webhook so contact messages are never dropped.
+SLACK_CONTACT_WEBHOOK_URL = os.environ.get('SLACK_CONTACT_WEBHOOK_URL', '')
+# Per-form routing: slugs listed here post to their own webhook; any form not
+# listed (or whose webhook is unset) uses SLACK_INTAKE_WEBHOOK_URL.
+SLACK_FORM_WEBHOOK_URLS = {
+    'contact-us': SLACK_CONTACT_WEBHOOK_URL,
+}
 SLACK_NOTIFICATION_MENTION = os.environ.get('SLACK_NOTIFICATION_MENTION', '')
 
 # Forms whose Slack alerts include SLACK_NOTIFICATION_MENTION (an @-mention)

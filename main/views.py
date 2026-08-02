@@ -367,16 +367,27 @@ def _should_mention_owners(form):
     return (form.slug or '').lower() in {slug.lower() for slug in mention_form_slugs}
 
 
+def _webhook_for_form(form):
+    """Pick the webhook for a form: its dedicated channel if configured,
+    otherwise the general intake webhook."""
+    form_webhooks = getattr(settings, 'SLACK_FORM_WEBHOOK_URLS', {}) or {}
+    slug = (form.slug or '').lower()
+    dedicated = (form_webhooks.get(slug) or '').strip()
+    if dedicated:
+        return dedicated
+    return (getattr(settings, 'SLACK_INTAKE_WEBHOOK_URL', '') or '').strip()
+
+
 def _send_slack_alert(form, submission, form_data, uploaded_files):
     if not getattr(settings, 'ENABLE_SLACK_NOTIFICATIONS', True):
         return
 
-    webhook_url = (getattr(settings, 'SLACK_INTAKE_WEBHOOK_URL', '') or '').strip()
+    webhook_url = _webhook_for_form(form)
     if not webhook_url:
         logger.error(
             "Slack notification skipped for submission %s because no webhook is "
-            "configured (SLACK_INTAKE_WEBHOOK_URL / SLACK_WEBHOOK_URL). The "
-            "submission is only visible in the admin.",
+            "configured (SLACK_CONTACT_WEBHOOK_URL / SLACK_INTAKE_WEBHOOK_URL / "
+            "SLACK_WEBHOOK_URL). The submission is only visible in the admin.",
             submission.id,
         )
         return

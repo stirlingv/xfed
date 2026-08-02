@@ -189,8 +189,65 @@ class SlackNotificationTests(TestCase):
 
     @override_settings(
         ENABLE_SLACK_NOTIFICATIONS=True,
+        SLACK_INTAKE_WEBHOOK_URL="https://hooks.slack.com/services/general/intake",
+        SLACK_FORM_WEBHOOK_URLS={"contact-us": "https://hooks.slack.com/services/contact/channel"},
+    )
+    @patch("main.views._post_slack_webhook")
+    def test_contact_form_routes_to_dedicated_channel(self, post_slack_webhook):
+        # The contact-us form is seeded by migration 0015.
+        form = IntakeForm.objects.get(slug="contact-us")
+        submission = IntakeSubmission.objects.create(
+            form=form,
+            data={"Email Address": "visitor@examplebusiness.com"},
+            ip_address="127.0.0.1",
+        )
+        send_intake_notification(
+            form, submission, {"Email Address": "visitor@examplebusiness.com"}, []
+        )
+
+        webhook_url, _payload = post_slack_webhook.call_args.args
+        self.assertEqual(webhook_url, "https://hooks.slack.com/services/contact/channel")
+
+    @override_settings(
+        ENABLE_SLACK_NOTIFICATIONS=True,
+        SLACK_INTAKE_WEBHOOK_URL="https://hooks.slack.com/services/general/intake",
+        SLACK_FORM_WEBHOOK_URLS={"contact-us": "https://hooks.slack.com/services/contact/channel"},
+    )
+    @patch("main.views._post_slack_webhook")
+    def test_other_forms_route_to_general_intake_channel(self, post_slack_webhook):
+        payload = self._build_submission_payload(
+            "client-consultation", "Request a Free Consultation"
+        )
+        send_intake_notification(*payload)
+
+        webhook_url, _payload = post_slack_webhook.call_args.args
+        self.assertEqual(webhook_url, "https://hooks.slack.com/services/general/intake")
+
+    @override_settings(
+        ENABLE_SLACK_NOTIFICATIONS=True,
+        SLACK_INTAKE_WEBHOOK_URL="https://hooks.slack.com/services/general/intake",
+        SLACK_FORM_WEBHOOK_URLS={"contact-us": ""},
+    )
+    @patch("main.views._post_slack_webhook")
+    def test_contact_form_falls_back_when_dedicated_webhook_unset(self, post_slack_webhook):
+        form = IntakeForm.objects.get(slug="contact-us")
+        submission = IntakeSubmission.objects.create(
+            form=form,
+            data={"Email Address": "visitor@examplebusiness.com"},
+            ip_address="127.0.0.1",
+        )
+        send_intake_notification(
+            form, submission, {"Email Address": "visitor@examplebusiness.com"}, []
+        )
+
+        webhook_url, _payload = post_slack_webhook.call_args.args
+        self.assertEqual(webhook_url, "https://hooks.slack.com/services/general/intake")
+
+    @override_settings(
+        ENABLE_SLACK_NOTIFICATIONS=True,
         SLACK_INTAKE_WEBHOOK_URL="",
         SLACK_WEBHOOK_URL="",
+        SLACK_FORM_WEBHOOK_URLS={},
     )
     @patch("main.views._post_slack_webhook")
     def test_missing_webhook_skips_without_error(self, post_slack_webhook):
