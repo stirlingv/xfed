@@ -5,7 +5,6 @@ from urllib.request import Request, urlopen
 
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
-from django.core.mail import EmailMessage
 from django.core.exceptions import ValidationError
 from django.conf import settings
 from .models import Banner, Feature, Post, PageContent, DynamicPage, IntakeForm, IntakeSubmission, IntakeFile
@@ -279,7 +278,7 @@ def handle_intake_submission(request, form):
                 original_filename=uploaded_file.name
             )
 
-        # Send email notification
+        # Send Slack notification
         send_intake_notification(form, submission, form_data, uploaded_files)
 
         # Show confirmation page after successful submission
@@ -342,114 +341,61 @@ def get_client_ip(request):
     return ip
 
 def send_intake_notification(form, submission, form_data, uploaded_files):
-    """Send email notification for new intake submission"""
-    # Prepare shared subject/body for all notification channels.
-    subject = f"New {form.title} Submission"
-    message_lines = [
-        f"New submission received for: {form.title}",
-        f"Submitted at: {submission.submitted_at.strftime('%Y-%m-%d %H:%M:%S')}",
-        f"IP Address: {submission.ip_address}",
-        "",
-        "Form Data:",
-        "-" * 40,
-    ]
+    """Send a Slack notification for a new intake submission.
 
-    for field_label, value in form_data.items():
-        message_lines.append(f"{field_label}: {value}")
-
-    if uploaded_files:
-        message_lines.extend([
-            "",
-            f"Files Uploaded: {len(uploaded_files)}",
-            "-" * 40,
-        ])
-        for uploaded_file, field_label in uploaded_files:
-            message_lines.append(f"- {uploaded_file.name} ({field_label})")
-
-    message_body = "\n".join(message_lines)
-
-    recipients = [email.strip() for email in form.email_recipients.split('\n') if email.strip()]
-    if recipients:
-        try:
-            email = EmailMessage(
-                subject=subject,
-                body=message_body,
-                from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@xfedtax.com'),
-                to=recipients,
-            )
-
-            # Attach files if any
-            for uploaded_file, _field_label in uploaded_files:
-                uploaded_file.seek(0)
-                email.attach(
-                    uploaded_file.name,
-                    uploaded_file.read(),
-                    uploaded_file.content_type or "application/octet-stream",
-                )
-
-            email.send()
-        except Exception as exc:
-            logger.exception(
-                "Error sending intake recipient email for form '%s': %s",
-                form.slug,
-                str(exc),
-            )
-
-    if _should_notify_owners(form):
-        try:
-            _send_owner_email_alert(subject, message_body)
-        except Exception as exc:
-            logger.exception(
-                "Error sending owner alert email for form '%s': %s",
-                form.slug,
-                str(exc),
-            )
-
-        try:
-            _send_owner_slack_alert(form, submission, form_data, uploaded_files)
-        except Exception as exc:
-            logger.exception(
-                "Error sending owner Slack alert for form '%s': %s",
-                form.slug,
-                str(exc),
-            )
+    Slack is the only outbound notification channel (email delivery was
+    retired along with the Google Workspace account). Submissions are always
+    stored in the database first, so a failed notification never loses the
+    lead — it just has to be found in the admin instead.
+    """
+    try:
+        _send_slack_alert(form, submission, form_data, uploaded_files)
+    except Exception as exc:
+        logger.exception(
+            "Error sending Slack alert for form '%s' (submission %s): %s",
+            form.slug,
+            submission.id,
+            str(exc),
+        )
 
 
-def _should_notify_owners(form):
-    owner_form_slugs = getattr(settings, 'OWNER_NOTIFICATION_FORM_SLUGS', [])
-    if not owner_form_slugs:
+def _should_mention_owners(form):
+    """High-priority forms add an @-mention so alerts trigger a Slack ping."""
+    mention_form_slugs = getattr(settings, 'OWNER_NOTIFICATION_FORM_SLUGS', [])
+    if not mention_form_slugs:
         return False
-    return (form.slug or '').lower() in {slug.lower() for slug in owner_form_slugs}
+    return (form.slug or '').lower() in {slug.lower() for slug in mention_form_slugs}
 
 
-def _send_owner_email_alert(subject, message_body):
-    owner_emails = getattr(settings, 'OWNER_NOTIFICATION_EMAILS', [])
-    recipients = sorted({email.strip() for email in owner_emails if email.strip()})
-    if not recipients:
+def _webhook_for_form(form):
+    """Pick the webhook for a form: its dedicated channel if configured,
+    otherwise the general intake webhook."""
+    form_webhooks = getattr(settings, 'SLACK_FORM_WEBHOOK_URLS', {}) or {}
+    slug = (form.slug or '').lower()
+    dedicated = (form_webhooks.get(slug) or '').strip()
+    if dedicated:
+        return dedicated
+    return (getattr(settings, 'SLACK_INTAKE_WEBHOOK_URL', '') or '').strip()
+
+
+def _send_slack_alert(form, submission, form_data, uploaded_files):
+    if not getattr(settings, 'ENABLE_SLACK_NOTIFICATIONS', True):
         return
 
-    owner_email = EmailMessage(
-        subject=f"[Owner Alert] {subject}",
-        body=message_body,
-        from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@xfedtax.com'),
-        to=recipients,
-    )
-    owner_email.send()
-
-
-def _send_owner_slack_alert(form, submission, form_data, uploaded_files):
-    if not getattr(settings, 'ENABLE_SLACK_NOTIFICATIONS', False):
-        return
-
-    webhook_url = getattr(settings, 'SLACK_WEBHOOK_URL', '').strip()
+    webhook_url = _webhook_for_form(form)
     if not webhook_url:
-        logger.warning("Slack owner notifications skipped because SLACK_WEBHOOK_URL is not set.")
+        logger.error(
+            "Slack notification skipped for submission %s because no webhook is "
+            "configured (SLACK_CONTACT_WEBHOOK_URL / SLACK_INTAKE_WEBHOOK_URL / "
+            "SLACK_WEBHOOK_URL). The submission is only visible in the admin.",
+            submission.id,
+        )
         return
 
     client_identifier = _extract_client_identifier(form_data)
     file_count = len(uploaded_files)
     mention = (getattr(settings, 'SLACK_NOTIFICATION_MENTION', '') or '').strip()
-    intro = f"{mention} " if mention else ""
+    intro = f"{mention} " if mention and _should_mention_owners(form) else ""
     message = (
         f"{intro}HireXFed alert: New *{form.title}* submission "
         f"(ID `{submission.id}`) from *{client_identifier}*. Files: *{file_count}*."
@@ -463,23 +409,42 @@ def _send_owner_slack_alert(form, submission, form_data, uploaded_files):
         details.append("• No non-file fields captured.")
 
     if uploaded_files:
-        details.append(f"• *Uploaded files:* {file_count}")
+        file_names = ", ".join(uploaded_file.name for uploaded_file, _label in uploaded_files)
+        details.append(f"• *Uploaded files ({file_count}):* {file_names}")
+
+    blocks = [
+        {"type": "section", "text": {"type": "mrkdwn", "text": message}},
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": "\n".join(details[:20]),
+            },
+        },
+    ]
+
+    admin_url = _build_submission_admin_url(submission)
+    if admin_url:
+        blocks.append({
+            "type": "context",
+            "elements": [
+                {"type": "mrkdwn", "text": f"<{admin_url}|Open submission in admin>"},
+            ],
+        })
 
     payload = {
         "text": message,
         "mrkdwn": True,
-        "blocks": [
-            {"type": "section", "text": {"type": "mrkdwn", "text": message}},
-            {
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": "\n".join(details[:20]),
-                },
-            },
-        ],
+        "blocks": blocks,
     }
     _post_slack_webhook(webhook_url, payload)
+
+
+def _build_submission_admin_url(submission):
+    base_url = (getattr(settings, 'SITE_BASE_URL', '') or '').strip().rstrip('/')
+    if not base_url:
+        return ''
+    return f"{base_url}/admin/main/intakesubmission/{submission.id}/change/"
 
 
 def _extract_client_identifier(form_data):

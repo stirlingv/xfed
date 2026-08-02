@@ -308,9 +308,9 @@ class IntakeFormAdmin(admin.ModelAdmin):
             'fields': ('title', 'slug', 'description'),
             'description': 'Basic form settings and description'
         }),
-        ('Email & Messages', {
-            'fields': ('email_recipients', 'success_message'),
-            'description': 'Configure email notifications and success messages'
+        ('Messages', {
+            'fields': ('success_message',),
+            'description': 'Configure the confirmation message shown after submission (notifications are sent to Slack)'
         }),
         ('Form Options', {
             'fields': ('is_active', 'allow_file_uploads'),

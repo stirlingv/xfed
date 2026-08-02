@@ -19,7 +19,7 @@ class Command(BaseCommand):
         page_templates = {
             'contact': {
                 'title': 'Contact Us',
-                'content': 'Get in touch with our team. We\'re here to help with all your tax and financial needs.',
+                'content': 'Get in touch with our team. We\'re here to help with all your tax and financial needs. <a href="/intake/contact-us/">Send us a message</a> and we\'ll get back to you within one business day.',
                 'template_type': 'generic',
                 'meta_description': 'Contact XFED Tax Solutions for professional tax and financial services.'
             },

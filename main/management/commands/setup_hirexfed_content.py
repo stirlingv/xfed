@@ -56,13 +56,14 @@ class Command(BaseCommand):
         self.setup_footer()
         self.setup_client_intake_form()
         self.setup_sme_intake_form()
+        self.setup_contact_form()
         self.setup_pages()
         self.setup_navigation()
 
         self.stdout.write(self.style.SUCCESS('\n✅ HireXFed content setup complete!'))
         self.stdout.write('\nNext steps:')
         self.stdout.write('1. Review content in Django Admin')
-        self.stdout.write('2. Update contact email in Intake Forms')
+        self.stdout.write('2. Confirm SLACK_INTAKE_WEBHOOK_URL is set so form alerts reach Slack')
         self.stdout.write('3. Add your business address (optional)')
         self.stdout.write('4. Add real images to posts')
         self.stdout.write('5. Customize as needed\n')
@@ -289,7 +290,7 @@ class Command(BaseCommand):
         self.stdout.write('  → Setting up contact info...')
 
         self._upsert_singleton(ContactInfo, {
-            'email': 'help@hirexfed.com',
+            'email': '',  # Inbound email is unmonitored - the site links to /intake/contact-us/ instead
             'phone': '',  # No phone - use Request a Callback instead
             'address': 'Serving clients nationwide\nRemote consultations available'
         })
@@ -409,7 +410,6 @@ class Command(BaseCommand):
                 'title': 'Request a Free Consultation',
                 'description': 'Tell us about your tax situation and one of our former IRS experts will contact you within 24 hours. All information is kept strictly confidential.',
                 'success_message': 'Thank you for your inquiry! One of our tax experts will contact you within 24 hours to discuss your situation.',
-                'email_recipients': 'admin@hirexfed.com',
                 'is_active': True,
                 'allow_file_uploads': True,
             },
@@ -569,9 +569,62 @@ class Command(BaseCommand):
                 'title': 'Join Our Expert Network',
                 'description': 'Are you a former federal employee with tax expertise? Join HireXFed\'s network of Subject Matter Experts and help clients while earning competitive compensation. Our SMEs typically earn 75-80% of client fees.',
                 'success_message': 'Thank you for your interest in joining HireXFed! Our team will review your application and contact you within 3-5 business days to discuss next steps.',
-                'email_recipients': 'admin@hirexfed.com',
                 'is_active': True,
                 'allow_file_uploads': True,
+            },
+            fields=fields,
+        )
+
+        self.stdout.write(self.style.SUCCESS(' Done'))
+
+    def setup_contact_form(self):
+        """Set up the public contact form (replaces the old mailto: contact email)."""
+        self.stdout.write('  → Setting up contact form...')
+
+        fields = [
+            {
+                'label': 'Full Name',
+                'field_name': 'full_name',
+                'field_type': 'text',
+                'placeholder': 'John Smith',
+                'is_required': True,
+                'order': 1
+            },
+            {
+                'label': 'Email Address',
+                'field_name': 'email',
+                'field_type': 'email',
+                'placeholder': 'john@example.com',
+                'is_required': True,
+                'order': 2,
+                'help_text': 'We will reply to this address.'
+            },
+            {
+                'label': 'Subject',
+                'field_name': 'subject',
+                'field_type': 'select',
+                'choices': 'General Question\nTax Services\nJoining the Network\nBilling or Payments\nWebsite Feedback\nOther',
+                'is_required': True,
+                'order': 3
+            },
+            {
+                'label': 'Message',
+                'field_name': 'message',
+                'field_type': 'textarea',
+                'placeholder': 'How can we help you?',
+                'is_required': True,
+                'order': 4
+            },
+        ]
+
+        self._upsert_intake_form(
+            slug='contact-us',
+            defaults={
+                'title': 'Contact Us',
+                'description': 'Have a question or need help? Send us a message and our team will get back to you within one business day.',
+                'success_message': 'Thank you for reaching out! Your message has been delivered to our team and we will get back to you within one business day.',
+                'is_active': True,
+                'allow_file_uploads': False,
             },
             fields=fields,
         )
@@ -1177,6 +1230,14 @@ class Command(BaseCommand):
             url='/members/faq/',
             parent=join_network,
             order=10,
+            is_active=True,
+        )
+
+        self._upsert_navigation_item(
+            title='Contact Us',
+            url='/intake/contact-us/',
+            order=65,
+            parent=None,
             is_active=True,
         )
 

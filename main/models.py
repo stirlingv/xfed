@@ -194,8 +194,9 @@ class MiniPost(models.Model):
 
 class ContactInfo(models.Model):
     email = models.EmailField(
+        blank=True,
         verbose_name="Contact Email Address",
-        help_text="Email address displayed in the 'Get in touch' section"
+        help_text="Optional. Leave blank while inbound email is unmonitored — the site links to the contact form instead."
     )
     phone = models.CharField(
         max_length=50,
@@ -212,7 +213,7 @@ class ContactInfo(models.Model):
         verbose_name_plural = "Contact Information"
 
     def __str__(self):
-        return self.email
+        return self.email or "Contact Information"
 
 class Footer(models.Model):
     copyright = models.CharField(
@@ -325,10 +326,6 @@ class IntakeForm(models.Model):
         default="Thank you for your submission! We will contact you soon.",
         verbose_name="Success Message",
         help_text="Message shown after successful form submission"
-    )
-    email_recipients = models.TextField(
-        verbose_name="Email Recipients",
-        help_text="Email addresses to send form submissions to (one per line)"
     )
     is_active = models.BooleanField(
         default=True,

@@ -104,11 +104,11 @@ Use the admin actions for multiple submissions:
 ✅ Backup submission data regularly
 ```
 
-### **Email Security**
+### **Notification Security**
 ```
-✅ Use secure email servers for notifications
-✅ Configure SPF/DKIM for email authenticity
-✅ Never include full client data in email notifications
+✅ Keep Slack webhook URLs secret (treat them like passwords)
+✅ Restrict the Slack channel to people who should see leads
+✅ Review sensitive details in the admin, not in the Slack alert
 ✅ Use secure file sharing for sensitive documents
 ```
 
@@ -183,7 +183,7 @@ Role-Based Process:
 
 #### **"Too many new submissions"**
 - Use bulk actions to process multiple items
-- Set up email filters for different form types
+- Set up Slack channel conventions for different form types
 - Consider auto-assignment rules based on form type
 
 #### **"Missing follow-ups"**
