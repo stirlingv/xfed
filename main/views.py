@@ -8,6 +8,7 @@ from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.conf import settings
 from .models import Banner, Feature, Post, PageContent, DynamicPage, IntakeForm, IntakeSubmission, IntakeFile
+from . import seed_content
 from .validators import (
     ALLOWED_RESUME_EXTENSIONS_DISPLAY,
     MAX_FILES_PER_SUBMISSION,
@@ -28,27 +29,14 @@ def index(request):
     # Create default banner if none exists in database
     if not banner:
         # Create a default banner object (not saved to database)
-        banner = Banner(
-            heading="XFED Tax Solutions",
-            subheading="Former Feds Making The System Work For You!",
-            description1="XFED Tax Solutions is committed to providing efficient and effective tax and tax related services to America's taxpayer population.",
-            description2="Whether you are an individual or business or both, America's largest network of former IRS tax professionals can provide the services you need.",
-            description3="For specific information about how we can help you, please <a href='/intake/client-consultation/'>request a consultation</a> and one of our experts will contact you within 24 hours.",
-            button_text="Learn More",
-            button_link="#"
-        )
+        banner = Banner(**seed_content.PIVOT_BANNER)
 
     # Get active features
     features = Feature.objects.all()
 
     # Fallback features if none exist in database
     if not features.exists():
-        features = [
-            {'icon': 'fa-gem', 'title': 'Taxes', 'description': 'Expert tax preparation and planning for individuals and businesses.'},
-            {'icon': 'fa-paper-plane', 'title': 'Data Science', 'description': 'Data-driven insights to optimize your financial decisions.'},
-            {'icon': 'fa-rocket', 'title': 'Information Technology', 'description': 'Secure and efficient IT solutions for your tax data.'},
-            {'icon': 'fa-signal', 'title': 'Veterans Affairs', 'description': 'Specialized support for veterans and their families.'},
-        ]
+        features = list(seed_content.PIVOT_FEATURES)
         features_from_db = False
     else:
         features_from_db = True

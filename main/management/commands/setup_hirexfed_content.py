@@ -9,6 +9,7 @@ from main.models import (
     IntakeForm, IntakeField, DynamicPage, PageContent,
     NavigationItem, SocialMediaLink
 )
+from main import seed_content
 
 
 class Command(BaseCommand):
@@ -150,48 +151,21 @@ class Command(BaseCommand):
         """Set up the homepage banner"""
         self.stdout.write('  → Setting up banner...')
 
-        self._upsert_singleton(Banner, {
-            'heading': "Former Federal Experts Ready to Help You!",
-            'subheading': "HireXFed connects you with seasoned federal professionals",
-            'description1': "Whether you need help with taxes, Social Security, data systems, or IT—our network of former federal employees has the insider knowledge to solve your problems efficiently.",
-            'description2': "With centuries of combined federal experience, our experts understand how government agencies work from the inside—and they'll put that knowledge to work for you.",
-            'description3': "<strong>Get expert help today.</strong> Select a service category below or fill out our quick consultation form.",
-            'button_text': "Request a Consultation",
-            'button_link': "/intake/client-consultation/"
-        })
+        self._upsert_singleton(Banner, dict(seed_content.PIVOT_BANNER))
         self.stdout.write(self.style.SUCCESS(' Done'))
 
     def setup_features(self):
-        """Set up the service categories section (formerly 'More About Us')"""
+        """Set up the homepage service tiles (8(a)/set-aside focus)"""
         self.stdout.write('  → Setting up features...')
 
         if self.reset:
             Feature.objects.all().delete()
+        else:
+            Feature.objects.filter(
+                title__in=seed_content.RETIRED_FEATURE_TITLES
+            ).delete()
 
-        features = [
-            {
-                'icon': 'fa-file-invoice-dollar',
-                'title': 'Income Taxes (IRS)',
-                'description': 'Our former IRS experts can assist with tax preparation, audit support, audit representation, tax planning, and resolving back taxes.'
-            },
-            {
-                'icon': 'fa-id-card',
-                'title': 'Social Security (SSA)',
-                'description': 'Our former SSA experts can assist with needs related to Social Security payments and processing. <em>(Coming Soon)</em>'
-            },
-            {
-                'icon': 'fa-database',
-                'title': 'Data Systems',
-                'description': 'Our experts can assist with needs related to agency-specific processes and data. <em>(Coming Soon)</em>'
-            },
-            {
-                'icon': 'fa-laptop-code',
-                'title': 'IT Systems',
-                'description': 'Our experts can assist with needs related to agency-specific IT systems. <em>(Coming Soon)</em>'
-            },
-        ]
-
-        for feature in features:
+        for feature in seed_content.PIVOT_FEATURES:
             self._upsert_by(
                 Feature,
                 {'title': feature['title']},
@@ -208,47 +182,10 @@ class Command(BaseCommand):
 
         if self.reset:
             Post.objects.all().delete()
+        else:
+            Post.objects.filter(title__in=seed_content.RETIRED_POST_TITLES).delete()
 
-        posts = [
-            {
-                'title': 'What To Do When You Receive an IRS Notice',
-                'description': 'Receiving mail from the IRS can be stressful. Learn the first steps you should take and how to respond appropriately to protect your interests.',
-                'button_text': 'Read More',
-                'button_link': '/services/'
-            },
-            {
-                'title': 'Understanding Offers in Compromise',
-                'description': 'An OIC lets you settle tax debt for less than you owe. Find out if you qualify and what the process involves from our former IRS experts.',
-                'button_text': 'Learn More',
-                'button_link': '/services/'
-            },
-            {
-                'title': 'Tax Liens vs. Tax Levies: Know the Difference',
-                'description': 'Both can impact your finances, but they work differently. Understanding the distinction is crucial for protecting your assets.',
-                'button_text': 'Read More',
-                'button_link': '/services/'
-            },
-            {
-                'title': 'Why Hire a Former IRS Agent?',
-                'description': 'When facing tax issues, insider knowledge matters. Discover the advantages of working with someone who\'s been on the other side.',
-                'button_text': 'Find Out',
-                'button_link': '/about/'
-            },
-            {
-                'title': 'Common Tax Filing Mistakes to Avoid',
-                'description': 'Simple errors can trigger audits and penalties. Our experts share the most frequent mistakes they\'ve seen—and how to avoid them.',
-                'button_text': 'Read More',
-                'button_link': '/services/'
-            },
-            {
-                'title': 'Year-Round Tax Planning Tips',
-                'description': 'Tax planning shouldn\'t be a once-a-year scramble. Learn strategies to stay organized and minimize your tax burden throughout the year.',
-                'button_text': 'Get Tips',
-                'button_link': '/services/'
-            },
-        ]
-
-        for post_data in posts:
+        for post_data in seed_content.PIVOT_POSTS:
             self._upsert_by(Post, {'title': post_data['title']}, {
                 'description': post_data['description'],
                 'button_text': post_data['button_text'],
@@ -263,20 +200,11 @@ class Command(BaseCommand):
 
         if self.reset:
             MiniPost.objects.all().delete()
+        else:
+            for snippet in seed_content.RETIRED_MINI_POST_SNIPPETS:
+                MiniPost.objects.filter(description__icontains=snippet).delete()
 
-        mini_posts = [
-            {
-                'description': '📅 Tax Season 2025: Key deadlines and what you need to know. Get prepared early to avoid last-minute stress.',
-            },
-            {
-                'description': '🆕 Now accepting new clients for IRS audit representation. Our former agents have a 95% success rate.',
-            },
-            {
-                'description': '💡 Did you know? You may qualify for penalty abatement if you have reasonable cause. Ask us how.',
-            },
-        ]
-
-        for mini_post_data in mini_posts:
+        for mini_post_data in seed_content.PIVOT_MINI_POSTS:
             self._upsert_by(
                 MiniPost,
                 {'description': mini_post_data['description']},
@@ -349,7 +277,7 @@ class Command(BaseCommand):
                 'label': 'Type of Tax Issue',
                 'field_name': 'issue_type',
                 'field_type': 'select',
-                'choices': 'IRS Audit or Examination\nBack Taxes / Unfiled Returns\nTax Liens or Levies\nOffer in Compromise\nPayment Plan / Installment Agreement\nBusiness Tax Issues\nTax Planning\nOther Tax Matter',
+                'choices': seed_content.CONSULTATION_PIVOT['issue_type_choices'],
                 'is_required': True,
                 'order': 5
             },
@@ -408,7 +336,7 @@ class Command(BaseCommand):
             slug='client-consultation',
             defaults={
                 'title': 'Request a Free Consultation',
-                'description': 'Tell us about your tax situation and one of our former IRS experts will contact you within 24 hours. All information is kept strictly confidential.',
+                'description': seed_content.CONSULTATION_PIVOT['description'],
                 'success_message': 'Thank you for your inquiry! One of our tax experts will contact you within 24 hours to discuss your situation.',
                 'is_active': True,
                 'allow_file_uploads': True,
@@ -634,6 +562,27 @@ class Command(BaseCommand):
     def setup_pages(self):
         """Set up dynamic pages"""
         self.stdout.write('  → Setting up pages...')
+
+        # 8(a) / Set-Aside landing page and checklist (primary marketing pages)
+        for page_data in (seed_content.PAGE_8A_TAX_HELP, seed_content.PAGE_8A_CHECKLIST):
+            DynamicPage.objects.update_or_create(
+                slug=page_data['slug'],
+                defaults={
+                    'title': page_data['title'],
+                    'template_type': 'generic',
+                    'meta_description': page_data['meta_description'],
+                    'is_published': True,
+                    'show_in_navigation': False
+                }
+            )
+            self._upsert_page_content(
+                page=page_data['slug'],
+                section_type='main_content',
+                title=page_data['content_title'],
+                content=page_data['content'],
+                order=1,
+                is_active=True
+            )
 
         # About Page
         about_page, _ = DynamicPage.objects.update_or_create(
@@ -1188,6 +1137,7 @@ class Command(BaseCommand):
         # Main navigation items
         nav_items = [
             {'title': 'Home', 'url': '/', 'order': 10},
+            dict(seed_content.NAV_8A_ITEM),
             {'title': 'Services', 'url': '/services/', 'order': 20},
             {'title': 'How It Works', 'url': '/how-it-works/', 'order': 40},
             {'title': 'About', 'url': '/about/', 'order': 50},

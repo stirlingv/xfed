@@ -286,6 +286,38 @@ class ContactFormMigrationTests(TestCase):
         self.assertEqual(field_names, {"full_name", "email", "subject", "message"})
 
 
+class SetAsidePivotMigrationTests(TestCase):
+    """Migration 0016 seeds the 8(a)/set-aside pivot content."""
+
+    def test_8a_landing_and_checklist_pages_exist(self):
+        from .models import DynamicPage
+
+        for slug in ("8a-tax-help", "8a-annual-review-tax-checklist"):
+            page = DynamicPage.objects.get(slug=slug)
+            self.assertTrue(page.is_published)
+
+    def test_homepage_features_are_pivoted(self):
+        from .models import Feature
+
+        titles = set(Feature.objects.values_list("title", flat=True))
+        self.assertIn("8(a) & SBA Compliance", titles)
+        self.assertNotIn("Income Taxes (IRS)", titles)
+
+    def test_8a_landing_page_renders(self):
+        response = self.client.get("/8a-tax-help/")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "8(a)")
+
+    def test_setup_command_is_idempotent_with_pivot_content(self):
+        call_command("setup_hirexfed_content")
+        from .models import DynamicPage, Feature
+
+        self.assertEqual(
+            Feature.objects.filter(title="8(a) & SBA Compliance").count(), 1
+        )
+        self.assertEqual(DynamicPage.objects.filter(slug="8a-tax-help").count(), 1)
+
+
 class IntakeSubmissionValidationFeedbackTests(TestCase):
     def setUp(self):
         self.form = IntakeForm.objects.create(
