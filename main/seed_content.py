@@ -7,25 +7,20 @@ general tax help remains available but secondary.
 """
 
 PIVOT_BANNER = {
-    'heading': "Tax Experts for 8(a) & Set-Aside Small Businesses",
-    'subheading': "Former IRS professionals who know the government from the inside",
+    'heading': "8(a) Tax Experts",
+    'subheading': "Former IRS Pros, On Your Side",
     'description1': (
-        "If your business holds an 8(a) or other small business set-aside "
-        "certification, your tax returns and financial statements are more than "
-        "an IRS matter — they are part of keeping your certification and your "
-        "federal contracts."
+        "Your 8(a) certification depends on clean records, not just a happy "
+        "IRS. We keep your returns and books SBA-review-ready."
     ),
     'description2': (
-        "The SBA has sharply increased financial reviews of 8(a) participants, "
-        "demanding years of tax and financial records and suspending firms that "
-        "could not produce them. HireXFed's nationwide network of former IRS "
-        "professionals keeps your returns, books, and SBA paperwork audit-ready."
+        "SBA reviews are intensifying, and firms without clean records are "
+        "losing certifications. Don't be one of them."
     ),
     'description3': (
-        "<strong>General tax questions are always welcome</strong> — and if you "
-        "own a set-aside business, you're in exactly the right place. "
+        "<strong>General tax questions? Always welcome.</strong> "
         "<a href='/intake/client-consultation/'>Request a free consultation</a> "
-        "and one of our experts will contact you within 24 hours."
+        "— we reply within 24 hours."
     ),
     'button_text': "Get 8(a) Tax Help",
     'button_link': "/intake/client-consultation/",
