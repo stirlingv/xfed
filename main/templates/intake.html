@@ -39,6 +39,14 @@
         border-left-color: #0c5460;
         color: #0c5460;
     }
+    .intake-hp-field {
+        position: absolute;
+        left: -9999px;
+        top: -9999px;
+        height: 0;
+        width: 0;
+        overflow: hidden;
+    }
 </style>
 <section>
     <header class="main">
@@ -65,6 +73,16 @@
             <!-- Main Form -->
             <form method="post" enctype="multipart/form-data" action="">
                 {% csrf_token %}
+                <div class="intake-hp-field" aria-hidden="true">
+                    <label for="{{ honeypot_field_name }}">Leave this field blank</label>
+                    <input
+                        type="text"
+                        name="{{ honeypot_field_name }}"
+                        id="{{ honeypot_field_name }}"
+                        tabindex="-1"
+                        autocomplete="off"
+                    />
+                </div>
                 <div class="row gtr-uniform">
 
                     {% for field in form_fields %}

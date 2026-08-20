@@ -15,6 +15,8 @@ from django.urls import reverse
 
 from .models import IntakeField, IntakeFile, IntakeForm, IntakeSubmission
 from .validators import (
+    HONEYPOT_FIELD_NAME,
+    INTAKE_RATE_LIMIT_MAX_SUBMISSIONS,
     MAX_RESUME_FILE_SIZE_BYTES,
     normalize_and_validate_submission_email,
     validate_resume_upload,
@@ -443,6 +445,109 @@ class IntakeSubmissionValidationFeedbackTests(TestCase):
         self.assertTrue(
             any("Email Address: Please use a permanent email address." in str(message)
                 for message in messages_list)
+        )
+
+
+class IntakeSpamProtectionTests(TestCase):
+    def setUp(self):
+        self.form = IntakeForm.objects.create(
+            title="Feedback Form",
+            slug="feedback-form",
+            allow_file_uploads=False,
+        )
+        IntakeField.objects.create(
+            form=self.form,
+            label="Full Name",
+            field_name="full_name",
+            field_type="text",
+            is_required=True,
+            order=1,
+        )
+        IntakeField.objects.create(
+            form=self.form,
+            label="Email Address",
+            field_name="email",
+            field_type="email",
+            is_required=True,
+            order=2,
+        )
+
+    def test_honeypot_field_silently_rejects_without_creating_submission(self):
+        response = self.client.post(
+            reverse("intake_form", kwargs={"slug": self.form.slug}),
+            data={
+                "full_name": "Bot Name",
+                "email": "bot@business.com",
+                HONEYPOT_FIELD_NAME: "http://spam.example",
+            },
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "intake_confirmation.html")
+        self.assertEqual(IntakeSubmission.objects.filter(form=self.form).count(), 0)
+
+    def test_legitimate_submission_with_empty_honeypot_succeeds(self):
+        response = self.client.post(
+            reverse("intake_form", kwargs={"slug": self.form.slug}),
+            data={
+                "full_name": "Real User",
+                "email": "real@business.com",
+                HONEYPOT_FIELD_NAME: "",
+            },
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(IntakeSubmission.objects.filter(form=self.form).count(), 1)
+
+    def test_rate_limit_blocks_excessive_submissions_from_same_ip(self):
+        for _ in range(INTAKE_RATE_LIMIT_MAX_SUBMISSIONS):
+            IntakeSubmission.objects.create(
+                form=self.form,
+                data={"Email Address": "existing@business.com", "Full Name": "Existing User"},
+                ip_address="203.0.113.5",
+            )
+
+        response = self.client.post(
+            reverse("intake_form", kwargs={"slug": self.form.slug}),
+            data={
+                "full_name": "New User",
+                "email": "new@business.com",
+            },
+            follow=True,
+            REMOTE_ADDR="203.0.113.5",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        messages_list = list(response.context["messages"])
+        self.assertTrue(
+            any("too many requests" in str(message).lower() for message in messages_list)
+        )
+        self.assertEqual(IntakeSubmission.objects.filter(form=self.form).count(), INTAKE_RATE_LIMIT_MAX_SUBMISSIONS)
+
+    def test_different_ip_is_not_rate_limited(self):
+        for _ in range(INTAKE_RATE_LIMIT_MAX_SUBMISSIONS):
+            IntakeSubmission.objects.create(
+                form=self.form,
+                data={"Email Address": "existing@business.com", "Full Name": "Existing User"},
+                ip_address="203.0.113.5",
+            )
+
+        response = self.client.post(
+            reverse("intake_form", kwargs={"slug": self.form.slug}),
+            data={
+                "full_name": "New User",
+                "email": "new@business.com",
+            },
+            follow=True,
+            REMOTE_ADDR="198.51.100.9",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            IntakeSubmission.objects.filter(form=self.form).count(),
+            INTAKE_RATE_LIMIT_MAX_SUBMISSIONS + 1,
         )
 
 

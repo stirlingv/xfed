@@ -1,5 +1,6 @@
 import json
 import logging
+from datetime import timedelta
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
@@ -7,10 +8,14 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.conf import settings
+from django.utils import timezone
 from .models import Banner, Feature, Post, PageContent, DynamicPage, IntakeForm, IntakeSubmission, IntakeFile
 from . import seed_content
 from .validators import (
     ALLOWED_RESUME_EXTENSIONS_DISPLAY,
+    HONEYPOT_FIELD_NAME,
+    INTAKE_RATE_LIMIT_MAX_SUBMISSIONS,
+    INTAKE_RATE_LIMIT_WINDOW_MINUTES,
     MAX_FILES_PER_SUBMISSION,
     MAX_RESUME_FILE_SIZE_MB,
     RESUME_FILE_ACCEPT_ATTRIBUTE,
@@ -139,6 +144,7 @@ def intake_form_view(request, slug):
         'allowed_resume_extensions': ALLOWED_RESUME_EXTENSIONS_DISPLAY,
         'resume_max_file_size_mb': MAX_RESUME_FILE_SIZE_MB,
         'resume_file_accept_attribute': RESUME_FILE_ACCEPT_ATTRIBUTE,
+        'honeypot_field_name': HONEYPOT_FIELD_NAME,
     }
 
     return render(request, 'intake.html', context)
@@ -146,6 +152,27 @@ def intake_form_view(request, slug):
 def handle_intake_submission(request, form):
     """Handle form submission and file uploads"""
     try:
+        client_ip = get_client_ip(request)
+
+        # Honeypot: real users never see or fill this field, but bots that
+        # auto-fill every input do. Pretend success without saving anything
+        # so the bot doesn't learn to adapt.
+        if (request.POST.get(HONEYPOT_FIELD_NAME) or '').strip():
+            logger.info(
+                "Honeypot triggered on form '%s' from IP %s", form.slug, client_ip
+            )
+            return render(request, 'intake_confirmation.html', {'form': form})
+
+        if _is_rate_limited(client_ip):
+            logger.info(
+                "Rate limit hit on form '%s' from IP %s", form.slug, client_ip
+            )
+            messages.error(
+                request,
+                "You've submitted too many requests recently. Please try again later.",
+            )
+            return redirect('intake_form', slug=form.slug)
+
         # Collect form data
         form_data = {}
         email_value = None
@@ -255,7 +282,7 @@ def handle_intake_submission(request, form):
         submission = IntakeSubmission.objects.create(
             form=form,
             data=form_data,
-            ip_address=get_client_ip(request)
+            ip_address=client_ip
         )
 
         # Save uploaded files
@@ -286,6 +313,30 @@ def handle_intake_submission(request, form):
 
 def _add_field_validation_error(request, field_label, reason):
     messages.error(request, f"{field_label}: {reason}")
+
+
+def _is_rate_limited(ip_address):
+    """Cap how many intake submissions a single IP can make in a rolling window."""
+    if not ip_address:
+        return False
+
+    max_submissions = getattr(
+        settings, 'INTAKE_RATE_LIMIT_MAX_SUBMISSIONS', INTAKE_RATE_LIMIT_MAX_SUBMISSIONS
+    )
+    if not max_submissions:
+        return False
+
+    window_minutes = getattr(
+        settings, 'INTAKE_RATE_LIMIT_WINDOW_MINUTES', INTAKE_RATE_LIMIT_WINDOW_MINUTES
+    )
+    window_start = timezone.now() - timedelta(minutes=window_minutes)
+
+    recent_submissions = IntakeSubmission.objects.filter(
+        ip_address=ip_address,
+        submitted_at__gte=window_start,
+    ).count()
+
+    return recent_submissions >= max_submissions
 
 
 def _should_enforce_unique_email(form):
