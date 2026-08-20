@@ -9,6 +9,14 @@ MAX_RESUME_FILE_SIZE_MB = 5
 MAX_RESUME_FILE_SIZE_BYTES = MAX_RESUME_FILE_SIZE_MB * 1024 * 1024
 MAX_FILES_PER_SUBMISSION = 5
 
+# Hidden field real users never see or fill in; bots that auto-fill every
+# input tend to fill it, which is how we catch them.
+HONEYPOT_FIELD_NAME = "url"
+
+# Per-IP submission throttle, applied across all intake forms.
+INTAKE_RATE_LIMIT_WINDOW_MINUTES = 60
+INTAKE_RATE_LIMIT_MAX_SUBMISSIONS = 5
+
 RESUME_FILE_ACCEPT_ATTRIBUTE = ".pdf,.doc,.docx"
 ALLOWED_RESUME_EXTENSIONS = {".pdf", ".doc", ".docx"}
 ALLOWED_RESUME_EXTENSIONS_DISPLAY = "PDF, DOC, DOCX"
