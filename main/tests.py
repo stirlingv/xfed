@@ -471,6 +471,14 @@ class IntakeSpamProtectionTests(TestCase):
             is_required=True,
             order=2,
         )
+        IntakeField.objects.create(
+            form=self.form,
+            label="Message",
+            field_name="message",
+            field_type="textarea",
+            is_required=False,
+            order=3,
+        )
 
     def test_honeypot_field_silently_rejects_without_creating_submission(self):
         response = self.client.post(
@@ -525,6 +533,38 @@ class IntakeSpamProtectionTests(TestCase):
             any("too many requests" in str(message).lower() for message in messages_list)
         )
         self.assertEqual(IntakeSubmission.objects.filter(form=self.form).count(), INTAKE_RATE_LIMIT_MAX_SUBMISSIONS)
+
+    def test_message_containing_link_is_rejected_with_field_specific_message(self):
+        response = self.client.post(
+            reverse("intake_form", kwargs={"slug": self.form.slug}),
+            data={
+                "full_name": "Spammy Sender",
+                "email": "spammy@business.com",
+                "message": "Check out https://bonusbacklinks.com/sale for cheap SEO!",
+            },
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        messages_list = list(response.context["messages"])
+        self.assertTrue(
+            any("Links aren't allowed" in str(message) for message in messages_list)
+        )
+        self.assertEqual(IntakeSubmission.objects.filter(form=self.form).count(), 0)
+
+    def test_message_without_link_succeeds(self):
+        response = self.client.post(
+            reverse("intake_form", kwargs={"slug": self.form.slug}),
+            data={
+                "full_name": "Real User",
+                "email": "real@business.com",
+                "message": "I have a question about my tax filing.",
+            },
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(IntakeSubmission.objects.filter(form=self.form).count(), 1)
 
     def test_different_ip_is_not_rate_limited(self):
         for _ in range(INTAKE_RATE_LIMIT_MAX_SUBMISSIONS):

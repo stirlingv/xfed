@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 import zipfile
 
@@ -16,6 +17,15 @@ HONEYPOT_FIELD_NAME = "url"
 # Per-IP submission throttle, applied across all intake forms.
 INTAKE_RATE_LIMIT_WINDOW_MINUTES = 60
 INTAKE_RATE_LIMIT_MAX_SUBMISSIONS = 5
+
+# Free-text intake fields (names, messages) legitimately never need a link.
+# Spam/backlink submissions reliably include one, so it's a cheap tell.
+_URL_PATTERN = re.compile(r"(https?://|www\.)\S+", re.IGNORECASE)
+
+
+def contains_url(value):
+    """Return True if the text contains an http(s):// or www. link."""
+    return bool(_URL_PATTERN.search(value or ""))
 
 RESUME_FILE_ACCEPT_ATTRIBUTE = ".pdf,.doc,.docx"
 ALLOWED_RESUME_EXTENSIONS = {".pdf", ".doc", ".docx"}

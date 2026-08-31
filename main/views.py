@@ -19,6 +19,7 @@ from .validators import (
     MAX_FILES_PER_SUBMISSION,
     MAX_RESUME_FILE_SIZE_MB,
     RESUME_FILE_ACCEPT_ATTRIBUTE,
+    contains_url,
     normalize_and_validate_submission_email,
     validate_resume_upload,
 )
@@ -203,6 +204,13 @@ def handle_intake_submission(request, form):
                     email_value = normalized_email
                     email_field_label = field.label
                     form_data[field.label] = normalized_email
+                elif field.field_type in ('text', 'textarea') and contains_url(field_value):
+                    _add_field_validation_error(
+                        request,
+                        field.label,
+                        "Links aren't allowed here. Please remove the link and resubmit.",
+                    )
+                    return redirect('intake_form', slug=form.slug)
                 else:
                     form_data[field.label] = field_value
             elif field.is_required:
