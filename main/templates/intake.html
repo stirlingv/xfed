@@ -73,6 +73,7 @@
             <!-- Main Form -->
             <form method="post" enctype="multipart/form-data" action="">
                 {% csrf_token %}
+                <input type="hidden" name="{{ timing_field_name }}" value="{{ timing_token }}" />
                 <div class="intake-hp-field" aria-hidden="true">
                     <label for="{{ honeypot_field_name }}">Leave this field blank</label>
                     <input

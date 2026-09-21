@@ -1,7 +1,9 @@
 import re
+import time
 from pathlib import Path
 import zipfile
 
+from django.core import signing
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 
@@ -26,6 +28,35 @@ _URL_PATTERN = re.compile(r"(https?://|www\.)\S+", re.IGNORECASE)
 def contains_url(value):
     """Return True if the text contains an http(s):// or www. link."""
     return bool(_URL_PATTERN.search(value or ""))
+
+
+# Timing trap: a signed render timestamp handed out with the form. A script
+# that POSTs moments after fetching the page (or never fetched it at all)
+# gets caught, regardless of what language or content it fills fields with.
+TIMING_FIELD_NAME = "form_rendered_at"
+INTAKE_MIN_SUBMIT_SECONDS = 3
+INTAKE_MAX_SUBMIT_SECONDS = 6 * 60 * 60
+_TIMING_SIGNING_SALT = "intake-form-timing"
+
+
+def generate_timing_token(rendered_at=None):
+    """Sign a render time so a later submission can prove it isn't instant."""
+    return signing.dumps(time.time() if rendered_at is None else rendered_at, salt=_TIMING_SIGNING_SALT)
+
+
+def timing_token_is_suspicious(
+    token, min_seconds=INTAKE_MIN_SUBMIT_SECONDS, max_seconds=INTAKE_MAX_SUBMIT_SECONDS
+):
+    """True if the token is missing, tampered with, stale, or submitted too fast."""
+    if not token:
+        return True
+
+    try:
+        rendered_at = signing.loads(token, salt=_TIMING_SIGNING_SALT, max_age=max_seconds)
+    except signing.BadSignature:
+        return True
+
+    return (time.time() - rendered_at) < min_seconds
 
 RESUME_FILE_ACCEPT_ATTRIBUTE = ".pdf,.doc,.docx"
 ALLOWED_RESUME_EXTENSIONS = {".pdf", ".doc", ".docx"}
