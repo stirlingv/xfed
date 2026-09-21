@@ -1,6 +1,7 @@
 import io
 import shutil
 import tempfile
+import time
 import zipfile
 from unittest.mock import patch
 
@@ -16,12 +17,20 @@ from django.urls import reverse
 from .models import IntakeField, IntakeFile, IntakeForm, IntakeSubmission
 from .validators import (
     HONEYPOT_FIELD_NAME,
+    INTAKE_MIN_SUBMIT_SECONDS,
     INTAKE_RATE_LIMIT_MAX_SUBMISSIONS,
     MAX_RESUME_FILE_SIZE_BYTES,
+    TIMING_FIELD_NAME,
+    generate_timing_token,
     normalize_and_validate_submission_email,
     validate_resume_upload,
 )
 from .views import send_intake_notification
+
+
+def _valid_timing_data():
+    """A timing token old enough to pass the intake form's timing trap."""
+    return {TIMING_FIELD_NAME: generate_timing_token(time.time() - INTAKE_MIN_SUBMIT_SECONDS - 1)}
 
 
 class SubmissionValidationTests(TestCase):
@@ -347,7 +356,7 @@ class IntakeSubmissionValidationFeedbackTests(TestCase):
     def test_missing_required_field_shows_field_specific_message(self):
         response = self.client.post(
             reverse("intake_form", kwargs={"slug": self.form.slug}),
-            data={"email": "candidate@business.com"},
+            data={"email": "candidate@business.com", **_valid_timing_data()},
             follow=True,
         )
 
@@ -371,6 +380,7 @@ class IntakeSubmissionValidationFeedbackTests(TestCase):
             data={
                 "full_name": "Second User",
                 "email": "candidate@business.com",
+                **_valid_timing_data(),
             },
             follow=True,
         )
@@ -419,6 +429,7 @@ class IntakeSubmissionValidationFeedbackTests(TestCase):
             data={
                 "full_name": "Second User",
                 "email": "candidate@business.com",
+                **_valid_timing_data(),
             },
             follow=True,
         )
@@ -436,6 +447,7 @@ class IntakeSubmissionValidationFeedbackTests(TestCase):
             data={
                 "full_name": "Candidate User",
                 "email": "candidate@mailinator.com",
+                **_valid_timing_data(),
             },
             follow=True,
         )
@@ -487,6 +499,7 @@ class IntakeSpamProtectionTests(TestCase):
                 "full_name": "Bot Name",
                 "email": "bot@business.com",
                 HONEYPOT_FIELD_NAME: "http://spam.example",
+                **_valid_timing_data(),
             },
             follow=True,
         )
@@ -502,6 +515,7 @@ class IntakeSpamProtectionTests(TestCase):
                 "full_name": "Real User",
                 "email": "real@business.com",
                 HONEYPOT_FIELD_NAME: "",
+                **_valid_timing_data(),
             },
             follow=True,
         )
@@ -522,6 +536,7 @@ class IntakeSpamProtectionTests(TestCase):
             data={
                 "full_name": "New User",
                 "email": "new@business.com",
+                **_valid_timing_data(),
             },
             follow=True,
             REMOTE_ADDR="203.0.113.5",
@@ -541,6 +556,7 @@ class IntakeSpamProtectionTests(TestCase):
                 "full_name": "Spammy Sender",
                 "email": "spammy@business.com",
                 "message": "Check out https://bonusbacklinks.com/sale for cheap SEO!",
+                **_valid_timing_data(),
             },
             follow=True,
         )
@@ -559,12 +575,65 @@ class IntakeSpamProtectionTests(TestCase):
                 "full_name": "Real User",
                 "email": "real@business.com",
                 "message": "I have a question about my tax filing.",
+                **_valid_timing_data(),
             },
             follow=True,
         )
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(IntakeSubmission.objects.filter(form=self.form).count(), 1)
+
+    def test_form_page_renders_a_timing_token(self):
+        response = self.client.get(reverse("intake_form", kwargs={"slug": self.form.slug}))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["timing_field_name"], TIMING_FIELD_NAME)
+        self.assertTrue(response.context["timing_token"])
+        self.assertContains(response, f'name="{TIMING_FIELD_NAME}"')
+
+    def test_instant_submission_is_silently_rejected(self):
+        response = self.client.post(
+            reverse("intake_form", kwargs={"slug": self.form.slug}),
+            data={
+                "full_name": "Robot Name",
+                "email": "robot@business.com",
+                TIMING_FIELD_NAME: generate_timing_token(),
+            },
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "intake_confirmation.html")
+        self.assertEqual(IntakeSubmission.objects.filter(form=self.form).count(), 0)
+
+    def test_missing_timing_token_is_silently_rejected(self):
+        response = self.client.post(
+            reverse("intake_form", kwargs={"slug": self.form.slug}),
+            data={
+                "full_name": "Robot Name",
+                "email": "robot@business.com",
+            },
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "intake_confirmation.html")
+        self.assertEqual(IntakeSubmission.objects.filter(form=self.form).count(), 0)
+
+    def test_tampered_timing_token_is_silently_rejected(self):
+        response = self.client.post(
+            reverse("intake_form", kwargs={"slug": self.form.slug}),
+            data={
+                "full_name": "Robot Name",
+                "email": "robot@business.com",
+                TIMING_FIELD_NAME: "not-a-real-token",
+            },
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "intake_confirmation.html")
+        self.assertEqual(IntakeSubmission.objects.filter(form=self.form).count(), 0)
 
     def test_different_ip_is_not_rate_limited(self):
         for _ in range(INTAKE_RATE_LIMIT_MAX_SUBMISSIONS):
@@ -579,6 +648,7 @@ class IntakeSpamProtectionTests(TestCase):
             data={
                 "full_name": "New User",
                 "email": "new@business.com",
+                **_valid_timing_data(),
             },
             follow=True,
             REMOTE_ADDR="198.51.100.9",

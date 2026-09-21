@@ -19,8 +19,11 @@ from .validators import (
     MAX_FILES_PER_SUBMISSION,
     MAX_RESUME_FILE_SIZE_MB,
     RESUME_FILE_ACCEPT_ATTRIBUTE,
+    TIMING_FIELD_NAME,
     contains_url,
+    generate_timing_token,
     normalize_and_validate_submission_email,
+    timing_token_is_suspicious,
     validate_resume_upload,
 )
 
@@ -146,6 +149,8 @@ def intake_form_view(request, slug):
         'resume_max_file_size_mb': MAX_RESUME_FILE_SIZE_MB,
         'resume_file_accept_attribute': RESUME_FILE_ACCEPT_ATTRIBUTE,
         'honeypot_field_name': HONEYPOT_FIELD_NAME,
+        'timing_field_name': TIMING_FIELD_NAME,
+        'timing_token': generate_timing_token(),
     }
 
     return render(request, 'intake.html', context)
@@ -161,6 +166,16 @@ def handle_intake_submission(request, form):
         if (request.POST.get(HONEYPOT_FIELD_NAME) or '').strip():
             logger.info(
                 "Honeypot triggered on form '%s' from IP %s", form.slug, client_ip
+            )
+            return render(request, 'intake_confirmation.html', {'form': form})
+
+        # Timing trap: a real visitor takes at least a few seconds to read and
+        # fill the form. A script that submits immediately after fetching the
+        # page (or never fetched it) fails this regardless of what it filled
+        # the fields with, which catches spam that skips the honeypot.
+        if timing_token_is_suspicious(request.POST.get(TIMING_FIELD_NAME)):
+            logger.info(
+                "Timing check failed on form '%s' from IP %s", form.slug, client_ip
             )
             return render(request, 'intake_confirmation.html', {'form': form})
 
